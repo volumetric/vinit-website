@@ -20,23 +20,23 @@ export function MainNav() {
   return (
     <nav className="sticky top-0 z-50 bg-background border-b">
       <div className="container flex items-center justify-between py-4">
-        <Link href="/" className="text-2xl font-bold">
+        <Link href="/" className="text-xl font-bold">
           Home
         </Link>
         <NavigationMenu>
-          <NavigationMenuList>
-          <NavigationMenuItem>
+          <NavigationMenuList className="space-x-4">
+            <NavigationMenuItem>
               <Link href="/about" legacyBehavior passHref>
-                <NavigationMenuLink>About</NavigationMenuLink>
+                <NavigationMenuLink className="text-xl px-2">About</NavigationMenuLink>
               </Link>
             </NavigationMenuItem>
             <NavigationMenuItem>
               <Link href="/contact" legacyBehavior passHref>
-                <NavigationMenuLink>Contact</NavigationMenuLink>
+                <NavigationMenuLink className="text-xl px-2">Contact</NavigationMenuLink>
               </Link>
             </NavigationMenuItem>
             <NavigationMenuItem>
-              <NavigationMenuTrigger>Projects</NavigationMenuTrigger>
+              <NavigationMenuTrigger className="text-xl px-2">Projects</NavigationMenuTrigger>
               <NavigationMenuContent>
                 <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
                   {projectCategories.map((category) => (
@@ -44,7 +44,7 @@ export function MainNav() {
                       <NavigationMenuLink asChild>
                         <Link
                           href={category.href}
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground text-xl"
                         >
                           {category.name}
                         </Link>
