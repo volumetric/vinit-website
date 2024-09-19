@@ -6,7 +6,7 @@ export function Footer() {
           <p className="text-center text-sm leading-loose md:text-left">
             Built by Vinit Agrawal. The source code is available on{" "}
             <a
-              href="https://github.com/yourusername/your-repo"
+              href="https://github.com/volumetric/"
               target="_blank"
               rel="noreferrer"
               className="font-medium underline underline-offset-4"

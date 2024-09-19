@@ -6,7 +6,8 @@ export default function HomePage() {
       <section className="text-center">
         <h1 className="text-5xl font-bold mb-4">Hello, I&apos;m Vinit Agrawal</h1>
         <p className="text-lg text-muted-foreground mb-8">
-          A Software Engineer and Founder & CTO of <a href="https://www.hellotars.com" className="underline">TARS</a>.
+          A Programmer by Profession and Founder & CTO of <a href="https://www.hellotars.com" className="underline">TARS</a>.
+          <br/>
           Tars is a Conversational AI Agent/Chatbots Platform since 2015.
         </p>
         <Image

@@ -7,7 +7,7 @@ export default function AboutPage() {
       <h1 className="text-4xl font-bold mb-8">About Me</h1>
       <div className="prose dark:prose-invert max-w-none">
         <p>
-          Hello! I&apos;m Vinit Agrawal, a passionate software engineer and the founder CTO of Stars TARS, 
+          Hello! I&apos;m Vinit Agrawal, I am a Programmer by Profession. I am also the founder CTO of TARS, 
           a conversational AI chatbot company that I&apos;ve been building since 2015.
         </p>
         <p>

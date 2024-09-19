@@ -9,23 +9,19 @@ export default function ContactPage() {
       <div className="space-y-6">
         <div className="flex items-center space-x-4">
           <Mail className="w-6 h-6" />
-          <a href="mailto:vinit@example.com" className="text-blue-600 hover:underline">vinit@example.com</a>
-        </div>
-        <div className="flex items-center space-x-4">
-          <Phone className="w-6 h-6" />
-          <a href="tel:+1234567890" className="text-blue-600 hover:underline">+1 (234) 567-890</a>
+          <a href="mailto:vinit@hellotars.com" className="text-blue-600 hover:underline">vinit@hellotars.com</a>
         </div>
         <div className="flex items-center space-x-4">
           <Linkedin className="w-6 h-6" />
-          <a href="https://www.linkedin.com/in/vinitagrawal" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">LinkedIn Profile</a>
+          <a href="https://www.linkedin.com/in/vinitagr/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">LinkedIn Profile</a>
         </div>
         <div className="flex items-center space-x-4">
           <Twitter className="w-6 h-6" />
-          <a href="https://twitter.com/vinitagrawal" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Twitter Profile</a>
+          <a href="https://x.com/vinit_agr" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Twitter Profile</a>
         </div>
         <div className="flex items-center space-x-4">
           <Youtube className="w-6 h-6" />
-          <a href="https://www.youtube.com/channel/UCxxxxxxxx" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">YouTube Channel</a>
+          <a href="https://www.youtube.com/@Vinit_Agrawal" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">YouTube Channel</a>
         </div>
       </div>
     </div>
