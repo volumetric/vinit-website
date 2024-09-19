@@ -4,9 +4,10 @@ export default function HomePage() {
   return (
     <div className="container py-12">
       <section className="text-center">
-        <h1 className="text-5xl font-bold mb-4">Hello, I'm Vinit Agrawal</h1>
+        <h1 className="text-5xl font-bold mb-4">Hello, I&apos;m Vinit Agrawal</h1>
         <p className="text-lg text-muted-foreground mb-8">
-          A passionate Software Engineer and Founder & CTO of <a href="https://www.startstars.com" className="underline">Stars TARS</a>, building conversational AI chatbots since 2015.
+          <p>A Software Engineer and Founder & CTO of <a href="https://www.hellotars.com" className="underline">TARS</a>.</p>
+          <p>Tars is a Conversational AI Agent/Chatbots Platform since 2015.</p>
         </p>
         <Image
           src="/images/vinit-arcade.png"

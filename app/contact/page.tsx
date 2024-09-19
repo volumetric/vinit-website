@@ -1,5 +1,4 @@
 import { Breadcrumb } from "@/components/breadcrumb"
-import { Button } from "@/components/ui/button"
 import { Mail, Phone, Linkedin, Twitter, Youtube } from "lucide-react"
 
 export default function ContactPage() {

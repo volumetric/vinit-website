@@ -1,3 +1,4 @@
+import Image from "next/image"
 import { notFound } from "next/navigation"
 import { Breadcrumb } from "@/components/breadcrumb"
 import { Button } from "@/components/ui/button"
@@ -23,7 +24,15 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
         { label: project.title, href: `/projects/${project.id}` }
       ]} />
       <h1 className="text-4xl font-bold mb-4">{project.title}</h1>
-      <img src={project.image} alt={project.title} className="w-full max-w-2xl mb-4 rounded-lg" />
+      <div className="relative w-full max-w-2xl h-64 mb-4">
+        <Image
+          src={project.image}
+          alt={project.title}
+          layout="fill"
+          objectFit="cover"
+          className="rounded-lg"
+        />
+      </div>
       <p className="mb-4 text-lg">{project.description}</p>
       <p className="mb-4 text-sm font-semibold">Category: {project.category}</p>
       <div className="flex flex-wrap gap-4">
