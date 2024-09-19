@@ -1,5 +1,5 @@
 import { Breadcrumb } from "@/components/breadcrumb"
-import { Mail, Phone, Linkedin, Twitter, Youtube } from "lucide-react"
+import { Mail, Linkedin, Twitter, Youtube, Github } from "lucide-react"
 
 export default function ContactPage() {
   return (
@@ -22,6 +22,10 @@ export default function ContactPage() {
         <div className="flex items-center space-x-4">
           <Youtube className="w-6 h-6" />
           <a href="https://www.youtube.com/@Vinit_Agrawal" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">YouTube Channel</a>
+        </div>
+        <div className="flex items-center space-x-4">
+          <Github className="w-6 h-6" />
+          <a href="https://github.com/volumetric/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">GitHub Profile</a>
         </div>
       </div>
     </div>
