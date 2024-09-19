@@ -6,7 +6,7 @@ import { Footer } from "@/components/footer"
 
 export const metadata: Metadata = {
   title: "Vinit Agrawal - Personal Website",
-  description: "Personal website of Vinit Agrawal, Software Engineer and Founder CTO of Stars TARS",
+  description: "Personal website of Vinit Agrawal. Software Engineer by Prefession. Founder & CTO of TARS",
 };
 
 export default function RootLayout({
