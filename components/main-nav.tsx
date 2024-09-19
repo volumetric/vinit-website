@@ -16,6 +16,19 @@ const projectCategories = [
   { name: "Image Art", href: "/projects?category=image-art" },
 ]
 
+const tools = [
+  { 
+    name: "Image Generator", 
+    href: "https://my-app-orcin-three.vercel.app/generate-image",
+    description: "Create unique images using AI technology."
+  },
+  { 
+    name: "Emoji Maker", 
+    href: "https://emoji-maker-eight.vercel.app/",
+    description: "Design custom emojis for your messages and social media."
+  },
+]
+
 export function MainNav() {
   return (
     <nav className="sticky top-0 z-50 bg-background border-b">
@@ -35,7 +48,7 @@ export function MainNav() {
                 <NavigationMenuLink className="text-xl px-2">Contact</NavigationMenuLink>
               </Link>
             </NavigationMenuItem>
-            <NavigationMenuItem>
+            {/* <NavigationMenuItem>
               <NavigationMenuTrigger className="text-xl px-2">Projects</NavigationMenuTrigger>
               <NavigationMenuContent>
                 <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
@@ -48,6 +61,30 @@ export function MainNav() {
                         >
                           {category.name}
                         </Link>
+                      </NavigationMenuLink>
+                    </li>
+                  ))}
+                </ul>
+              </NavigationMenuContent>
+            </NavigationMenuItem> */}
+            <NavigationMenuItem>
+              <NavigationMenuTrigger className="text-xl px-2">Tools</NavigationMenuTrigger>
+              <NavigationMenuContent>
+                <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-1 lg:w-[600px]">
+                  {tools.map((tool) => (
+                    <li key={tool.name}>
+                      <NavigationMenuLink asChild>
+                        <a
+                          href={tool.href}
+                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <div className="text-lg font-medium leading-none">{tool.name}</div>
+                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                            {tool.description}
+                          </p>
+                        </a>
                       </NavigationMenuLink>
                     </li>
                   ))}
