@@ -9,12 +9,13 @@ import {
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu"
 
-const projectCategories = [
-  { name: "Apps", href: "/projects?category=apps" },
-  { name: "Games", href: "/projects?category=games" },
-  { name: "Videos", href: "/projects?category=videos" },
-  { name: "Image Art", href: "/projects?category=image-art" },
-]
+// Remove or comment out the unused projectCategories variable
+// const projectCategories = [
+//   { name: "Apps", href: "/projects?category=apps" },
+//   { name: "Games", href: "/projects?category=games" },
+//   { name: "Videos", href: "/projects?category=videos" },
+//   { name: "Image Art", href: "/projects?category=image-art" },
+// ]
 
 const tools = [
   { 
