@@ -10,7 +10,7 @@ export default function HomePage() {
           Tars is a Conversational AI Agent/Chatbots Platform since 2015.
         </p>
         <Image
-          src="/images/vinit-arcade.png"
+          src="https://vinit-agrawal-website.s3.amazonaws.com/vinitagr_A_programmer_working_on_a_laptop_happy_and_excited_in__cb06978c-3a86-4c64-acfb-edb9e60e66a5.webp"
           alt="Vinit in 90s Cartoon Style"
           width={300}
           height={300}
