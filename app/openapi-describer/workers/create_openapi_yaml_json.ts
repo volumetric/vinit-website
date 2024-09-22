@@ -35,3 +35,24 @@ fs.writeFileSync(outputFile, JSON.stringify(yamlFiles, null, 2));
 
 console.log(`JSON file '${outputFile}' has been created with nested YAML file entries.`);
 console.log(`Total number of YAML files added: ${count}`);
+
+function countTopLevelAPIs(outputFile: string) {
+    try {
+        const fileContent = fs.readFileSync(outputFile, 'utf8');
+        const jsonData = JSON.parse(fileContent);
+        
+        if (jsonData && jsonData.APIs && typeof jsonData.APIs === 'object') {
+            return Object.keys(jsonData.APIs).length;
+        } else {
+            console.error('Invalid file structure: "APIs" key not found or not an object');
+            return 0;
+        }
+    } catch (error) {
+        console.error('Error reading or parsing the file:', error);
+        return 0;
+    }
+}
+
+// Usage
+const apiCount = countTopLevelAPIs(outputFile);
+console.log(`Number of top-level objects in "APIs": ${apiCount}`);
