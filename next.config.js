@@ -1,7 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
-  swcMinify: true,
+  experimental: {
+    serverComponentsExternalPackages: ['yaml'],
+  },
   images: {
     domains: ['vinit-agrawal-website.s3.amazonaws.com'],
   },

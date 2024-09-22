@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { ChevronDown, ChevronRight } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 // Dynamically import AceEditor to avoid SSR issues
 const AceEditor = dynamic(
@@ -20,6 +21,7 @@ const AceEditor = dynamic(
     await import('ace-builds/src-noconflict/theme-github')
     await import('ace-builds/src-noconflict/theme-monokai')
     await import('ace-builds/src-noconflict/ext-searchbox')
+    await import('ace-builds/src-noconflict/ext-language_tools')
     return ace
   },
   { ssr: false }
@@ -83,6 +85,53 @@ export default function OpenAPIDescriber() {
   const [parsedSpec, setParsedSpec] = useState<OpenAPISpec | null>(null)
   const [specFormat, setSpecFormat] = useState<'json' | 'yaml'>('json')
   const { theme } = useTheme()
+  const [apiSpecs, setApiSpecs] = useState<string[]>([])
+  const [selectedSpec, setSelectedSpec] = useState<string>('')
+
+  useEffect(() => {
+    fetchApiSpecs()
+  }, [])
+
+  useEffect(() => {
+    if (selectedSpec) {
+      fetchSpecContent(selectedSpec)
+    }
+  }, [selectedSpec])
+
+  const fetchApiSpecs = async () => {
+    try {
+      const response = await fetch('/api/list-api-specs')
+      if (response.ok) {
+        const specs = await response.json()
+        const formattedSpecs = specs.map((spec: string) => {
+          // Remove '/APIs/' prefix and replace '/' with '・'
+          return spec.replace('/APIs/', '').replace(/\//g, '・')
+        })
+        setApiSpecs(formattedSpecs)
+      } else {
+        console.error('Failed to fetch API specs')
+      }
+    } catch (error) {
+      console.error('Error fetching API specs:', error)
+    }
+  }
+
+  const fetchSpecContent = async (specPath: string) => {
+    try {
+      // Reconstruct the original path
+      const originalPath = `/APIs/${specPath.replace(/・/g, '/')}`
+      const response = await fetch(originalPath)
+      if (response.ok) {
+        const content = await response.text()
+        setOpenApiSpec(content)
+        detectFormat(content)
+      } else {
+        console.error('Failed to fetch spec content')
+      }
+    } catch (error) {
+      console.error('Error fetching spec content:', error)
+    }
+  }
 
   useEffect(() => {
     detectFormat(openApiSpec)
@@ -169,10 +218,22 @@ export default function OpenAPIDescriber() {
     <div className="container py-12">
       <h1 className="text-3xl font-bold mb-4">OpenAPI Describer</h1>
       <p className="text-lg mb-8">
-        This tool allows you to paste an OpenAPI specification (in JSON or YAML format) and view a simplified, editable representation of the API endpoints and their details.
+        This tool allows you to select or paste an OpenAPI specification (in JSON or YAML format) and view a simplified, editable representation of the API endpoints and their details.
       </p>
       <div className="flex flex-col lg:flex-row h-screen">
         <div className="w-full lg:w-1/2 pr-4 mb-8 lg:mb-0">
+          <Select onValueChange={setSelectedSpec} value={selectedSpec}>
+            <SelectTrigger className="w-full mb-4">
+              <SelectValue placeholder="Select an API spec" />
+            </SelectTrigger>
+            <SelectContent>
+              {apiSpecs.map((spec) => (
+                <SelectItem key={spec} value={spec}>
+                  {spec}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <AceEditor
             mode={specFormat}
             theme={theme === 'dark' ? 'monokai' : 'github'}
@@ -182,8 +243,14 @@ export default function OpenAPIDescriber() {
             setOptions={{
               useWorker: false,
               showPrintMargin: false,
+              enableBasicAutocompletion: true,
+              enableLiveAutocompletion: true,
+              enableSnippets: true,
+              showLineNumbers: true,
+              tabSize: 2,
+              foldStyle: 'markbegin', // Enable code folding
             }}
-            style={{ width: '100%', height: 'calc(100% - 40px)' }}
+            style={{ width: '100%', height: 'calc(100% - 80px)' }}
             value={openApiSpec}
             placeholder="Paste your OpenAPI spec here (JSON or YAML format)"
             commands={[
@@ -192,6 +259,24 @@ export default function OpenAPIDescriber() {
                 bindKey: {win: 'Ctrl-F', mac: 'Command-F'},
                 exec: 'find',
                 readOnly: true
+              },
+              {
+                name: 'toggleFold',
+                bindKey: {win: 'Alt-L|Ctrl-F1', mac: 'Command-Alt-L|Command-F1'},
+                exec: 'toggleFold',
+                readOnly: false
+              },
+              {
+                name: 'foldall',
+                bindKey: {win: 'Alt-0', mac: 'Command-Option-0'},
+                exec: 'foldall',
+                readOnly: false
+              },
+              {
+                name: 'unfoldall',
+                bindKey: {win: 'Alt-Shift-0', mac: 'Command-Option-Shift-0'},
+                exec: 'unfoldall',
+                readOnly: false
               }
             ]}
           />
