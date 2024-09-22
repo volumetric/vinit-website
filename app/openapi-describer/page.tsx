@@ -1,15 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import yaml from 'js-yaml'
 import { useTheme } from 'next-themes'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { ChevronDown, ChevronRight } from 'lucide-react'
 
@@ -27,16 +25,30 @@ const AceEditor = dynamic(
   { ssr: false }
 )
 
-const MarkdownContent = ({ children }: { children: string }) => (
-  <ReactMarkdown
-    remarkPlugins={[remarkGfm]}
-    components={{
-      a: ({ ...props }) => <a className="text-blue-500 hover:text-blue-700 underline" {...props} />,
-    }}
-  >
-    {children}
-  </ReactMarkdown>
-)
+const EditableContent = ({ children, onEdit }: { children: string; onEdit: (newContent: string) => void }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  const handleBlur = () => {
+    setIsEditing(false);
+    if (contentRef.current) {
+      onEdit(contentRef.current.innerText);
+    }
+  };
+
+  return (
+    <div
+      ref={contentRef}
+      contentEditable={true}
+      onFocus={() => setIsEditing(true)}
+      onBlur={handleBlur}
+      className={`p-2 rounded whitespace-pre-wrap ${isEditing ? 'bg-muted' : ''}`}
+      suppressContentEditableWarning={true}
+    >
+      {children}
+    </div>
+  );
+};
 
 interface OpenAPISpec {
   info: {
@@ -164,87 +176,93 @@ export default function OpenAPIDescriber() {
         <div className="w-full lg:w-1/2 pl-4 overflow-y-auto">
           {parsedSpec && (
             <div>
-              <h2 className="text-2xl font-bold mb-4">Toolkit: {parsedSpec.info.title}</h2>
-              <Input
-                value={parsedSpec.info.title}
-                onChange={(e) => updateSpec('info.title', e.target.value)}
-                className="mb-2"
-              />
+              <h1 className="text-2xl font-bold mb-4">{parsedSpec.info.title}</h1>
               <div className="mb-4">
-                <MarkdownContent>{parsedSpec.info.description}</MarkdownContent>
+                <EditableContent onEdit={(newContent) => updateSpec('info.description', newContent)}>
+                  {parsedSpec.info.description}
+                </EditableContent>
               </div>
-              {Object.entries(groupEndpointsByTag()).map(([tag, endpoints]) => (
-                <Card key={tag} className="mb-6">
-                  <CardHeader>
-                    <CardTitle>{tag}</CardTitle>
-                    <CardDescription className="whitespace-pre-wrap">
-                      <MarkdownContent>
-                        {parsedSpec.tags?.find((t) => t.name === tag)?.description || 'No description available.'}
-                      </MarkdownContent>
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Accordion type="single" collapsible className="w-full">
-                      {endpoints.map(({ path, method, details }) => (
-                        <AccordionItem value={`${path}-${method}`} key={`${path}-${method}`}>
-                          <AccordionTrigger>
-                            {details.summary || `${method.toUpperCase()} ${path}`}
-                          </AccordionTrigger>
-                          <AccordionContent>
-                            <div className="space-y-4">
-                              <div>
-                                <h4 className="text-sm font-medium mb-1">Description:</h4>
-                                <Textarea
-                                  value={details.description || ''}
-                                  onChange={(e) => updateSpec(`paths.${path}.${method}.description`, e.target.value)}
-                                  className="w-full"
-                                  rows={3}
-                                />
-                              </div>
-                              <div>
-                                <pre className="bg-muted p-2 rounded-md text-sm">{`${method.toUpperCase()} ${path}`}</pre>
-                              </div>
-                              {details.parameters && details.parameters.length > 0 && (
-                                <Accordion type="single" collapsible className="w-full">
-                                  <AccordionItem value="parameters">
-                                    <AccordionTrigger className="text-sm font-medium">
-                                      Parameters
-                                    </AccordionTrigger>
-                                    <AccordionContent>
-                                      <table className="w-full text-sm">
-                                        <thead>
-                                          <tr className="bg-muted">
-                                            <th className="p-2 text-left">Name</th>
-                                            <th className="p-2 text-left">In</th>
-                                            <th className="p-2 text-left">Type</th>
-                                            <th className="p-2 text-left">Required</th>
-                                            <th className="p-2 text-left">Description</th>
-                                          </tr>
-                                        </thead>
-                                        <tbody>
-                                          {details.parameters.map((param, index) => (
-                                            <tr key={index} className={index % 2 === 0 ? 'bg-background' : 'bg-muted'}>
-                                              <td className="p-2">{param.name}</td>
-                                              <td className="p-2">{param.in}</td>
-                                              <td className="p-2">{param.schema?.type || 'N/A'}</td>
-                                              <td className="p-2">{param.required ? 'Yes' : 'No'}</td>
-                                              <td className="p-2">{param.description || 'N/A'}</td>
-                                            </tr>
-                                          ))}
-                                        </tbody>
-                                      </table>
-                                    </AccordionContent>
-                                  </AccordionItem>
-                                </Accordion>
-                              )}
-                            </div>
-                          </AccordionContent>
-                        </AccordionItem>
-                      ))}
-                    </Accordion>
-                  </CardContent>
-                </Card>
-              ))}
+              <Accordion type="multiple" className="space-y-4">
+                {Object.entries(groupEndpointsByTag()).map(([tag, endpoints]) => (
+                  <AccordionItem value={tag} key={tag}>
+                    <AccordionTrigger className="text-xl font-semibold">{tag}</AccordionTrigger>
+                    <AccordionContent>
+                      <Card className="mb-6">
+                        <CardContent className="pt-6">
+                          <div className="mb-4">
+                            <EditableContent onEdit={(newContent) => {
+                              const newTags = parsedSpec.tags?.map(t => 
+                                t.name === tag ? { ...t, description: newContent } : t
+                              ) || [];
+                              updateSpec('tags', newTags);
+                            }}>
+                              {parsedSpec.tags?.find((t) => t.name === tag)?.description || 'No description available.'}
+                            </EditableContent>
+                          </div>
+                          <Accordion type="single" collapsible className="w-full">
+                            {endpoints.map(({ path, method, details }) => (
+                              <AccordionItem value={`${path}-${method}`} key={`${path}-${method}`}>
+                                <AccordionTrigger>
+                                  {details.summary || `${method.toUpperCase()} ${path}`}
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                  <div className="space-y-4">
+                                    <div>
+                                      <h4 className="text-sm font-medium mb-1">Description:</h4>
+                                      <Textarea
+                                        value={details.description || ''}
+                                        onChange={(e) => updateSpec(`paths.${path}.${method}.description`, e.target.value)}
+                                        className="w-full"
+                                        rows={3}
+                                      />
+                                    </div>
+                                    <div>
+                                      <pre className="bg-muted p-2 rounded-md text-sm">{`${method.toUpperCase()} ${path}`}</pre>
+                                    </div>
+                                    {details.parameters && details.parameters.length > 0 && (
+                                      <Accordion type="single" collapsible className="w-full">
+                                        <AccordionItem value="parameters">
+                                          <AccordionTrigger className="text-sm font-medium">
+                                            Parameters
+                                          </AccordionTrigger>
+                                          <AccordionContent>
+                                            <table className="w-full text-sm">
+                                              <thead>
+                                                <tr className="bg-muted">
+                                                  <th className="p-2 text-left">Name</th>
+                                                  <th className="p-2 text-left">In</th>
+                                                  <th className="p-2 text-left">Type</th>
+                                                  <th className="p-2 text-left">Required</th>
+                                                  <th className="p-2 text-left">Description</th>
+                                                </tr>
+                                              </thead>
+                                              <tbody>
+                                                {details.parameters.map((param, index) => (
+                                                  <tr key={index} className={index % 2 === 0 ? 'bg-background' : 'bg-muted'}>
+                                                    <td className="p-2">{param.name}</td>
+                                                    <td className="p-2">{param.in}</td>
+                                                    <td className="p-2">{param.schema?.type || 'N/A'}</td>
+                                                    <td className="p-2">{param.required ? 'Yes' : 'No'}</td>
+                                                    <td className="p-2">{param.description || 'N/A'}</td>
+                                                  </tr>
+                                                ))}
+                                              </tbody>
+                                            </table>
+                                          </AccordionContent>
+                                        </AccordionItem>
+                                      </Accordion>
+                                    )}
+                                  </div>
+                                </AccordionContent>
+                              </AccordionItem>
+                            ))}
+                          </Accordion>
+                        </CardContent>
+                      </Card>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
             </div>
           )}
         </div>
