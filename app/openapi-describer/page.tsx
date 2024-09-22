@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import yaml from 'js-yaml'
 import { useTheme } from 'next-themes'
@@ -87,6 +87,7 @@ export default function OpenAPIDescriber() {
   const { theme } = useTheme()
   const [apiSpecs, setApiSpecs] = useState<string[]>([])
   const [selectedSpec, setSelectedSpec] = useState<string>('')
+  const [isReloading, setIsReloading] = useState(false);
 
   useEffect(() => {
     fetchApiSpecs()
@@ -125,6 +126,7 @@ export default function OpenAPIDescriber() {
         const content = await response.text()
         setOpenApiSpec(content)
         detectFormat(content)
+        parseOpenApiSpec(content) // Automatically parse the spec
       } else {
         console.error('Failed to fetch spec content')
       }
@@ -151,9 +153,9 @@ export default function OpenAPIDescriber() {
     }
   }
 
-  const parseOpenApiSpec = () => {
+  const parseOpenApiSpec = (content: string) => {
     try {
-      const parsed = specFormat === 'json' ? JSON.parse(openApiSpec) : yaml.load(openApiSpec) as OpenAPISpec
+      const parsed = specFormat === 'json' ? JSON.parse(content) : yaml.load(content) as OpenAPISpec
       setParsedSpec(parsed)
     } catch (error) {
       console.error('Failed to parse OpenAPI spec:', error)
@@ -214,26 +216,41 @@ export default function OpenAPIDescriber() {
     setOpenApiSpec(specFormat === 'json' ? JSON.stringify(newSpec, null, 2) : yaml.dump(newSpec));
   };
 
+  const reloadSpec = useCallback(() => {
+    setIsReloading(true);
+    parseOpenApiSpec(openApiSpec);
+    setTimeout(() => setIsReloading(false), 500); // Reset after animation
+  }, [openApiSpec, parseOpenApiSpec]);
+
   return (
     <div className="container py-12">
       <h1 className="text-3xl font-bold mb-4">OpenAPI Describer</h1>
       <p className="text-lg mb-8">
-        This tool allows you to select or paste an OpenAPI specification (in JSON or YAML format) and view a simplified, editable representation of the API endpoints and their details.
+        This tool allows you to select an OpenAPI specification (in JSON or YAML format) and view a simplified, editable representation of the API endpoints and their details.
       </p>
       <div className="flex flex-col lg:flex-row h-screen">
         <div className="w-full lg:w-1/2 pr-4 mb-8 lg:mb-0">
-          <Select onValueChange={setSelectedSpec} value={selectedSpec}>
-            <SelectTrigger className="w-full mb-4">
-              <SelectValue placeholder="Select an API spec" />
-            </SelectTrigger>
-            <SelectContent>
-              {apiSpecs.map((spec) => (
-                <SelectItem key={spec} value={spec}>
-                  {spec}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex justify-between items-center mb-4">
+            <Select onValueChange={setSelectedSpec} value={selectedSpec}>
+              <SelectTrigger className="w-3/4">
+                <SelectValue placeholder="Select an API spec" />
+              </SelectTrigger>
+              <SelectContent>
+                {apiSpecs.map((spec) => (
+                  <SelectItem key={spec} value={spec}>
+                    {spec}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button 
+              onClick={reloadSpec} 
+              className={`ml-2 transition-transform duration-200 ease-in-out ${isReloading ? 'scale-95' : ''}`}
+              disabled={isReloading}
+            >
+              {isReloading ? 'Reloading...' : 'Reload'}
+            </Button>
+          </div>
           <AceEditor
             mode={specFormat}
             theme={theme === 'dark' ? 'monokai' : 'github'}
@@ -280,7 +297,6 @@ export default function OpenAPIDescriber() {
               }
             ]}
           />
-          <Button onClick={parseOpenApiSpec} className="mt-4">Parse Spec</Button>
         </div>
         <div className="w-full lg:w-1/2 pl-4 overflow-y-auto">
           {parsedSpec && (
