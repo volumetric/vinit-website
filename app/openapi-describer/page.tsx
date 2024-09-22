@@ -29,16 +29,29 @@ const MarkdownContent = ({ children }: { children: string }) => (
   <ReactMarkdown
     remarkPlugins={[remarkGfm]}
     components={{
-      a: ({ node, ...props }) => <a className="text-blue-500 hover:text-blue-700 underline" {...props} />,
+      a: ({ ...props }) => <a className="text-blue-500 hover:text-blue-700 underline" {...props} />,
     }}
   >
     {children}
   </ReactMarkdown>
 )
 
+interface OpenAPISpec {
+  info: {
+    title: string;
+    description: string;
+  };
+  paths: Record<string, Record<string, {
+    tags: string[];
+    summary: string;
+    description: string;
+  }>>;
+  tags?: Array<{ name: string; description: string }>;
+}
+
 export default function OpenAPIDescriber() {
   const [openApiSpec, setOpenApiSpec] = useState('')
-  const [parsedSpec, setParsedSpec] = useState<any>(null)
+  const [parsedSpec, setParsedSpec] = useState<OpenAPISpec | null>(null)
   const [specFormat, setSpecFormat] = useState<'json' | 'yaml'>('json')
   const { theme } = useTheme()
 
@@ -62,7 +75,7 @@ export default function OpenAPIDescriber() {
 
   const parseOpenApiSpec = () => {
     try {
-      const parsed = specFormat === 'json' ? JSON.parse(openApiSpec) : yaml.load(openApiSpec)
+      const parsed = specFormat === 'json' ? JSON.parse(openApiSpec) : yaml.load(openApiSpec) as OpenAPISpec
       setParsedSpec(parsed)
     } catch (error) {
       console.error('Failed to parse OpenAPI spec:', error)
@@ -70,9 +83,10 @@ export default function OpenAPIDescriber() {
   }
 
   const updateSpec = (path: string, value: string) => {
+    if (!parsedSpec) return
     const newSpec = JSON.parse(JSON.stringify(parsedSpec))
     const keys = path.split('.')
-    let current = newSpec
+    let current: any = newSpec
     for (let i = 0; i < keys.length - 1; i++) {
       current = current[keys[i]]
     }
@@ -82,11 +96,12 @@ export default function OpenAPIDescriber() {
   }
 
   const groupEndpointsByTag = () => {
-    const groupedEndpoints: { [key: string]: any[] } = {}
-    Object.entries(parsedSpec.paths || {}).forEach(([path, methods]: [string, any]) => {
-      Object.entries(methods).forEach(([method, details]: [string, any]) => {
+    if (!parsedSpec) return {}
+    const groupedEndpoints: Record<string, Array<{ path: string; method: string; details: any }>> = {}
+    Object.entries(parsedSpec.paths).forEach(([path, methods]) => {
+      Object.entries(methods).forEach(([method, details]) => {
         const tags = details.tags || ['Untagged']
-        tags.forEach((tag: string) => {
+        tags.forEach((tag) => {
           if (!groupedEndpoints[tag]) {
             groupedEndpoints[tag] = []
           }
@@ -147,7 +162,7 @@ export default function OpenAPIDescriber() {
                     <CardTitle>{tag}</CardTitle>
                     <CardDescription className="whitespace-pre-wrap">
                       <MarkdownContent>
-                        {parsedSpec.tags?.find((t: any) => t.name === tag)?.description || 'No description available.'}
+                        {parsedSpec.tags?.find((t) => t.name === tag)?.description || 'No description available.'}
                       </MarkdownContent>
                     </CardDescription>
                   </CardHeader>
