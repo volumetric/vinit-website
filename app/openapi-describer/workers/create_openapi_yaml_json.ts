@@ -1,5 +1,5 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 function findYamlFiles(rootDir: string): { files: Record<string, any>; count: number } {
     const yamlFiles: Record<string, any> = {};
