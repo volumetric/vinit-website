@@ -41,12 +41,15 @@ interface OpenAPISpec {
     title: string;
     description: string;
   };
-  paths: Record<string, Record<string, {
-    tags: string[];
-    summary: string;
-    description: string;
-  }>>;
+  paths: Record<string, Record<string, PathItemObject>>;
   tags?: Array<{ name: string; description: string }>;
+}
+
+interface PathItemObject {
+  tags?: string[];
+  summary?: string;
+  description?: string;
+  // Add other properties as needed
 }
 
 export default function OpenAPIDescriber() {
@@ -97,15 +100,15 @@ export default function OpenAPIDescriber() {
 
   const groupEndpointsByTag = () => {
     if (!parsedSpec) return {}
-    const groupedEndpoints: Record<string, Array<{ path: string; method: string; details: Record<string, unknown> }>> = {}
+    const groupedEndpoints: Record<string, Array<{ path: string; method: string; details: PathItemObject }>> = {}
     Object.entries(parsedSpec.paths).forEach(([path, methods]) => {
       Object.entries(methods).forEach(([method, details]) => {
-        const tags = (details as { tags?: string[] }).tags || ['Untagged']
+        const tags = details.tags || ['Untagged']
         tags.forEach((tag) => {
           if (!groupedEndpoints[tag]) {
             groupedEndpoints[tag] = []
           }
-          groupedEndpoints[tag].push({ path, method, details: details as Record<string, unknown> })
+          groupedEndpoints[tag].push({ path, method, details })
         })
       })
     })
@@ -175,7 +178,7 @@ export default function OpenAPIDescriber() {
                           </AccordionTrigger>
                           <AccordionContent>
                             <MarkdownContent>
-                              {`**Description:** ${details.description}\n\n**Path:** ${path}\n\n**Method:** ${method.toUpperCase()}`}
+                              {`**Description:** ${details.description || 'No description available.'}\n\n**Path:** ${path}\n\n**Method:** ${method.toUpperCase()}`}
                             </MarkdownContent>
                             {/* Add more details here as needed */}
                           </AccordionContent>
