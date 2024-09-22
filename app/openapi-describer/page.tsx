@@ -141,6 +141,30 @@ export default function OpenAPIDescriber() {
     return groupedEndpoints
   }
 
+  const getTagDescription = (tag: string) => {
+    if (Array.isArray(parsedSpec?.tags)) {
+      const tagObject = parsedSpec.tags.find((t) => t.name === tag);
+      return tagObject?.description || 'No description available.';
+    }
+    return 'No description available.';
+  }
+
+  const updateTagDescription = (tag: string, newDescription: string) => {
+    if (!parsedSpec) return;
+    const newSpec = { ...parsedSpec };
+    if (!Array.isArray(newSpec.tags)) {
+      newSpec.tags = [];
+    }
+    const tagIndex = newSpec.tags.findIndex(t => t.name === tag);
+    if (tagIndex !== -1) {
+      newSpec.tags[tagIndex] = { ...newSpec.tags[tagIndex], description: newDescription };
+    } else {
+      newSpec.tags.push({ name: tag, description: newDescription });
+    }
+    setParsedSpec(newSpec);
+    setOpenApiSpec(specFormat === 'json' ? JSON.stringify(newSpec, null, 2) : yaml.dump(newSpec));
+  };
+
   return (
     <div className="container py-12">
       <h1 className="text-3xl font-bold mb-4">OpenAPI Describer</h1>
@@ -190,14 +214,8 @@ export default function OpenAPIDescriber() {
                       <Card className="mb-6">
                         <CardContent className="pt-6">
                           <div className="mb-4">
-                            <EditableContent onEdit={(newContent) => {
-                              const currentTags = Array.isArray(parsedSpec.tags) ? parsedSpec.tags : [];
-                              const newTags = currentTags.map(t => 
-                                t.name === tag ? { ...t, description: newContent } : t
-                              );
-                              updateSpec('tags', JSON.stringify(newTags));
-                            }}>
-                              {Array.isArray(parsedSpec.tags) && parsedSpec.tags.find((t) => t.name === tag)?.description || 'No description available.'}
+                            <EditableContent onEdit={(newContent) => updateTagDescription(tag, newContent)}>
+                              {getTagDescription(tag)}
                             </EditableContent>
                           </div>
                           <Accordion type="single" collapsible className="w-full">
