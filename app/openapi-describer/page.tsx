@@ -86,9 +86,9 @@ export default function OpenAPIDescriber() {
     if (!parsedSpec) return
     const newSpec = JSON.parse(JSON.stringify(parsedSpec))
     const keys = path.split('.')
-    let current: any = newSpec
+    let current: Record<string, unknown> = newSpec
     for (let i = 0; i < keys.length - 1; i++) {
-      current = current[keys[i]]
+      current = current[keys[i]] as Record<string, unknown>
     }
     current[keys[keys.length - 1]] = value
     setParsedSpec(newSpec)
@@ -97,15 +97,15 @@ export default function OpenAPIDescriber() {
 
   const groupEndpointsByTag = () => {
     if (!parsedSpec) return {}
-    const groupedEndpoints: Record<string, Array<{ path: string; method: string; details: any }>> = {}
+    const groupedEndpoints: Record<string, Array<{ path: string; method: string; details: Record<string, unknown> }>> = {}
     Object.entries(parsedSpec.paths).forEach(([path, methods]) => {
       Object.entries(methods).forEach(([method, details]) => {
-        const tags = details.tags || ['Untagged']
+        const tags = (details as { tags?: string[] }).tags || ['Untagged']
         tags.forEach((tag) => {
           if (!groupedEndpoints[tag]) {
             groupedEndpoints[tag] = []
           }
-          groupedEndpoints[tag].push({ path, method, details })
+          groupedEndpoints[tag].push({ path, method, details: details as Record<string, unknown> })
         })
       })
     })
