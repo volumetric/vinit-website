@@ -8,6 +8,12 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 // Remove or comment out the unused projectCategories variable
 // const projectCategories = [
@@ -21,12 +27,20 @@ const tools = [
   { 
     name: "Image Generator", 
     href: "https://my-app-orcin-three.vercel.app/generate-image",
-    description: "Create unique images using AI technology."
+    description: "Create unique images using AI technology.",
+    external: true
   },
   { 
     name: "Emoji Maker", 
     href: "https://emoji-maker-eight.vercel.app/",
-    description: "Design custom emojis for your messages and social media."
+    description: "Design custom emojis for your messages and social media.",
+    external: true
+  },
+  {
+    name: "OpenAPI Describer",
+    href: "/openapi-describer",
+    description: "Analyze and describe OpenAPI specifications with ease.",
+    external: false
   },
 ]
 
@@ -78,8 +92,8 @@ export function MainNav() {
                         <a
                           href={tool.href}
                           className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                          target="_blank"
-                          rel="noopener noreferrer"
+                          target={tool.external ? "_blank" : "_self"}
+                          rel={tool.external ? "noopener noreferrer" : ""}
                         >
                           <div className="text-lg font-medium leading-none">{tool.name}</div>
                           <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">

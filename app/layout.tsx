@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Inter } from 'next/font/google';
 import { ThemeProvider } from "@/components/theme-provider"
 import { MainNav } from "@/components/main-nav"
 import { Footer } from "@/components/footer"
+
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: "Vinit Agrawal - Personal Website",
@@ -15,8 +18,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className="min-h-screen bg-background font-sans antialiased">
+    <html lang="en">
+      <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <div className="flex min-h-screen flex-col">
             <header className="container">
