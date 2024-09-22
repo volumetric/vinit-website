@@ -89,6 +89,8 @@ export default function OpenAPIDescriber() {
   const [apiSpecs, setApiSpecs] = useState<Record<string, SpecItem>>({})
   const [selectedPath, setSelectedPath] = useState<string[]>([]);
   const [isReloading, setIsReloading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const specs = getApiSpecs();
@@ -109,13 +111,21 @@ export default function OpenAPIDescriber() {
       // We've reached a leaf node (YAML file)
       const specItem = getSpecItemFromPath(apiSpecs, newPath);
       if (specItem?.url) {
+        setIsLoading(true);
+        setErrorMessage(null); // Clear any previous error
         fetchSpecContent(specItem.url)
           .then(content => {
             setOpenApiSpec(content);
             detectFormat(content);
             parseOpenApiSpec(content);
           })
-          .catch(error => console.error('Error fetching spec content:', error));
+          .catch(error => {
+            console.error('Error fetching spec content:', error);
+            setErrorMessage("Failed to fetch the specification file. Please try again.");
+          })
+          .finally(() => {
+            setIsLoading(false);
+          });
       }
     }
   };
@@ -271,11 +281,16 @@ export default function OpenAPIDescriber() {
           </div>
           <Button 
             onClick={reloadSpec} 
-            className={`mb-4 transition-transform duration-200 ease-in-out ${isReloading ? 'scale-95' : ''}`}
-            disabled={isReloading}
+            className={`mb-4 transition-transform duration-200 ease-in-out ${isReloading || isLoading ? 'scale-95' : ''}`}
+            disabled={isReloading || isLoading}
           >
-            {isReloading ? 'Reloading...' : 'Reload'}
+            {isReloading || isLoading ? 'Loading...' : 'Reload'}
           </Button>
+          {errorMessage && (
+            <div className="mb-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded">
+              {errorMessage}
+            </div>
+          )}
           <AceEditor
             mode={specFormat}
             theme={theme === 'dark' ? 'monokai' : 'github'}
@@ -321,10 +336,15 @@ export default function OpenAPIDescriber() {
                 readOnly: false
               }
             ]}
+            readOnly={isLoading}
           />
         </div>
         <div className="w-full lg:w-1/2 pl-4 overflow-y-auto">
-          {parsedSpec && (
+          {isLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+            </div>
+          ) : parsedSpec ? (
             <div>
               <h1 className="text-2xl font-bold mb-4">{parsedSpec.info.title}</h1>
               <div className="mb-4">
@@ -408,6 +428,10 @@ export default function OpenAPIDescriber() {
                   </AccordionItem>
                 ))}
               </Accordion>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <p className="text-lg text-gray-500">Select a specification file to view details</p>
             </div>
           )}
         </div>
