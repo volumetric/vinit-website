@@ -191,12 +191,13 @@ export default function OpenAPIDescriber() {
                         <CardContent className="pt-6">
                           <div className="mb-4">
                             <EditableContent onEdit={(newContent) => {
-                              const newTags = parsedSpec.tags?.map(t => 
+                              const currentTags = Array.isArray(parsedSpec.tags) ? parsedSpec.tags : [];
+                              const newTags = currentTags.map(t => 
                                 t.name === tag ? { ...t, description: newContent } : t
-                              ) || [];
-                              updateSpec('tags', newTags);
+                              );
+                              updateSpec('tags', JSON.stringify(newTags));
                             }}>
-                              {parsedSpec.tags?.find((t) => t.name === tag)?.description || 'No description available.'}
+                              {Array.isArray(parsedSpec.tags) && parsedSpec.tags.find((t) => t.name === tag)?.description || 'No description available.'}
                             </EditableContent>
                           </div>
                           <Accordion type="single" collapsible className="w-full">
