@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { getApiSpecs, fetchSpecContent, SpecItem } from './api'
 
 // Dynamically import AceEditor to avoid SSR issues
 const AceEditor = dynamic(
@@ -85,55 +86,57 @@ export default function OpenAPIDescriber() {
   const [parsedSpec, setParsedSpec] = useState<OpenAPISpec | null>(null)
   const [specFormat, setSpecFormat] = useState<'json' | 'yaml'>('json')
   const { theme } = useTheme()
-  const [apiSpecs, setApiSpecs] = useState<string[]>([])
-  const [selectedSpec, setSelectedSpec] = useState<string>('')
+  const [apiSpecs, setApiSpecs] = useState<Record<string, SpecItem>>({})
+  const [selectedPath, setSelectedPath] = useState<string[]>([]);
   const [isReloading, setIsReloading] = useState(false);
 
   useEffect(() => {
-    fetchApiSpecs()
-  }, [])
+    const specs = getApiSpecs();
+    setApiSpecs(specs);
+  }, []);
 
-  useEffect(() => {
-    if (selectedSpec) {
-      fetchSpecContent(selectedSpec)
+  const handleSpecSelect = (index: number, value: string) => {
+    const newPath = [...selectedPath.slice(0, index), value];
+    setSelectedPath(newPath);
+
+    let currentLevel: Record<string, SpecItem> | undefined = apiSpecs;
+    for (const pathPart of newPath) {
+      currentLevel = currentLevel?.[pathPart].children;
+      if (!currentLevel) break;
     }
-  }, [selectedSpec])
 
-  const fetchApiSpecs = async () => {
-    try {
-      const response = await fetch('/api/list-api-specs')
-      if (response.ok) {
-        const specs = await response.json()
-        const formattedSpecs = specs.map((spec: string) => {
-          // Remove '/APIs/' prefix and replace '/' with '・'
-          return spec.replace('/APIs/', '').replace(/\//g, '・')
-        })
-        setApiSpecs(formattedSpecs)
-      } else {
-        console.error('Failed to fetch API specs')
+    if (currentLevel === undefined) {
+      // We've reached a leaf node (YAML file)
+      const specItem = getSpecItemFromPath(apiSpecs, newPath);
+      if (specItem?.url) {
+        fetchSpecContent(specItem.url)
+          .then(content => {
+            setOpenApiSpec(content);
+            detectFormat(content);
+            parseOpenApiSpec(content);
+          })
+          .catch(error => console.error('Error fetching spec content:', error));
       }
-    } catch (error) {
-      console.error('Error fetching API specs:', error)
     }
-  }
+  };
 
-  const fetchSpecContent = async (specPath: string) => {
-    try {
-      // Reconstruct the original path
-      const originalPath = `/APIs/${specPath.replace(/・/g, '/')}`
-      const response = await fetch(originalPath)
-      if (response.ok) {
-        const content = await response.text()
-        setOpenApiSpec(content)
-        detectFormat(content)
-        parseOpenApiSpec(content) // Automatically parse the spec
-      } else {
-        console.error('Failed to fetch spec content')
-      }
-    } catch (error) {
-      console.error('Error fetching spec content:', error)
+  const getSpecItemFromPath = (specs: Record<string, SpecItem>, path: string[]): SpecItem | undefined => {
+    let current: SpecItem | undefined = specs[path[0]];
+    for (let i = 1; i < path.length; i++) {
+      if (!current?.children) return undefined;
+      current = current.children[path[i]];
     }
-  }
+    return current;
+  };
+
+  const getCurrentOptions = (specs: Record<string, SpecItem>, path: string[]): Record<string, SpecItem> => {
+    let current: Record<string, SpecItem> | undefined = specs;
+    for (const pathPart of path) {
+      current = current?.[pathPart].children;
+      if (!current) return {};
+    }
+    return current || {};
+  };
 
   useEffect(() => {
     detectFormat(openApiSpec)
@@ -230,27 +233,49 @@ export default function OpenAPIDescriber() {
       </p>
       <div className="flex flex-col lg:flex-row h-screen">
         <div className="w-full lg:w-1/2 pr-4 mb-8 lg:mb-0">
-          <div className="flex justify-between items-center mb-4">
-            <Select onValueChange={setSelectedSpec} value={selectedSpec}>
-              <SelectTrigger className="w-3/4">
-                <SelectValue placeholder="Select an API spec" />
-              </SelectTrigger>
-              <SelectContent>
-                {apiSpecs.map((spec) => (
-                  <SelectItem key={spec} value={spec}>
-                    {spec}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button 
-              onClick={reloadSpec} 
-              className={`ml-2 transition-transform duration-200 ease-in-out ${isReloading ? 'scale-95' : ''}`}
-              disabled={isReloading}
-            >
-              {isReloading ? 'Reloading...' : 'Reload'}
-            </Button>
+          <div className="flex flex-col space-y-2 mb-4">
+            {selectedPath.map((selected, index) => (
+              <Select 
+                key={index} 
+                onValueChange={(value) => handleSpecSelect(index, value)} 
+                value={selected}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={`Select ${index === 0 ? 'API provider' : 'option'}`} />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.keys(getCurrentOptions(apiSpecs, selectedPath.slice(0, index))).map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ))}
+            {Object.keys(getCurrentOptions(apiSpecs, selectedPath)).length > 0 && (
+              <Select
+                onValueChange={(value) => handleSpecSelect(selectedPath.length, value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={`Select ${selectedPath.length === 0 ? 'API provider' : 'option'}`} />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.keys(getCurrentOptions(apiSpecs, selectedPath)).map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
+          <Button 
+            onClick={reloadSpec} 
+            className={`mb-4 transition-transform duration-200 ease-in-out ${isReloading ? 'scale-95' : ''}`}
+            disabled={isReloading}
+          >
+            {isReloading ? 'Reloading...' : 'Reload'}
+          </Button>
           <AceEditor
             mode={specFormat}
             theme={theme === 'dark' ? 'monokai' : 'github'}
