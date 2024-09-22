@@ -10,6 +10,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Textarea } from "@/components/ui/textarea"
+import { ChevronDown, ChevronRight } from 'lucide-react'
 
 // Dynamically import AceEditor to avoid SSR issues
 const AceEditor = dynamic(
@@ -49,7 +51,19 @@ interface PathItemObject {
   tags?: string[];
   summary?: string;
   description?: string;
+  parameters?: ParameterObject[];
   // Add other properties as needed
+}
+
+interface ParameterObject {
+  name: string;
+  in: string;
+  description?: string;
+  required?: boolean;
+  schema?: {
+    type: string;
+    // Add other schema properties as needed
+  };
 }
 
 export default function OpenAPIDescriber() {
@@ -177,10 +191,53 @@ export default function OpenAPIDescriber() {
                             {details.summary || `${method.toUpperCase()} ${path}`}
                           </AccordionTrigger>
                           <AccordionContent>
-                            <MarkdownContent>
-                              {`**Description:** ${details.description || 'No description available.'}\n\n**Path:** ${path}\n\n**Method:** ${method.toUpperCase()}`}
-                            </MarkdownContent>
-                            {/* Add more details here as needed */}
+                            <div className="space-y-4">
+                              <div>
+                                <h4 className="text-sm font-medium mb-1">Description:</h4>
+                                <Textarea
+                                  value={details.description || ''}
+                                  onChange={(e) => updateSpec(`paths.${path}.${method}.description`, e.target.value)}
+                                  className="w-full"
+                                  rows={3}
+                                />
+                              </div>
+                              <div>
+                                <pre className="bg-muted p-2 rounded-md text-sm">{`${method.toUpperCase()} ${path}`}</pre>
+                              </div>
+                              {details.parameters && details.parameters.length > 0 && (
+                                <Accordion type="single" collapsible className="w-full">
+                                  <AccordionItem value="parameters">
+                                    <AccordionTrigger className="text-sm font-medium">
+                                      Parameters
+                                    </AccordionTrigger>
+                                    <AccordionContent>
+                                      <table className="w-full text-sm">
+                                        <thead>
+                                          <tr className="bg-muted">
+                                            <th className="p-2 text-left">Name</th>
+                                            <th className="p-2 text-left">In</th>
+                                            <th className="p-2 text-left">Type</th>
+                                            <th className="p-2 text-left">Required</th>
+                                            <th className="p-2 text-left">Description</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {details.parameters.map((param, index) => (
+                                            <tr key={index} className={index % 2 === 0 ? 'bg-background' : 'bg-muted'}>
+                                              <td className="p-2">{param.name}</td>
+                                              <td className="p-2">{param.in}</td>
+                                              <td className="p-2">{param.schema?.type || 'N/A'}</td>
+                                              <td className="p-2">{param.required ? 'Yes' : 'No'}</td>
+                                              <td className="p-2">{param.description || 'N/A'}</td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </AccordionContent>
+                                  </AccordionItem>
+                                </Accordion>
+                              )}
+                            </div>
                           </AccordionContent>
                         </AccordionItem>
                       ))}
