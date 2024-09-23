@@ -26,7 +26,7 @@ const tools = [
   },
   { 
     name: "Emoji Maker", 
-    href: "https://emoji-maker-eight.vercel.app/",
+    href: "/emoji-maker",
     description: "Design custom emojis for your messages and social media.",
     external: true
   },

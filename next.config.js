@@ -4,7 +4,7 @@ const nextConfig = {
     serverComponentsExternalPackages: ['yaml'],
   },
   images: {
-    domains: ['vinit-agrawal-website.s3.amazonaws.com'],
+    domains: ['vinit-agrawal-website.s3.amazonaws.com', 'replicate.delivery'],
   },
 }
 
