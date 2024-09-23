@@ -20,15 +20,15 @@ import {
 const tools = [
   { 
     name: "Image Generator", 
-    href: "https://my-app-orcin-three.vercel.app/generate-image",
+    href: "/image-generator",
     description: "Create unique images using AI technology.",
-    external: true
+    external: false
   },
   { 
     name: "Emoji Maker", 
     href: "/emoji-maker",
     description: "Design custom emojis for your messages and social media.",
-    external: true
+    external: false
   },
   {
     name: "OpenAPI Describer",
