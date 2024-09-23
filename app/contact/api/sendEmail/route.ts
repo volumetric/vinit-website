@@ -1,12 +1,10 @@
-'use server';
-
+import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 
-export async function sendEmail(
-  formData: { name: string; email: string; message: string },
-  imageData?: { imageUrl: string; resolution?: string }
-) {
+export async function POST(request: Request) {
   console.log('Starting sendEmail function');
+  const { formData, imageData } = await request.json();
+
   const transporter = nodemailer.createTransport({
     host: "smtp.sendgrid.net",
     port: 587,
@@ -56,12 +54,12 @@ export async function sendEmail(
     const info = await transporter.sendMail(mailOptions);
 
     console.log("Message sent: %s", info.messageId);
-    return { success: true } as const;
+    return NextResponse.json({ success: true });
   } catch (error: unknown) {
     console.error("Error sending email:", error);
     if (error instanceof Error) {
-      return { success: false, error: error.message } as const;
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
-    return { success: false, error: 'An unknown error occurred' } as const;
+    return NextResponse.json({ success: false, error: 'An unknown error occurred' }, { status: 500 });
   }
 }

@@ -1,17 +1,9 @@
 import { NextResponse } from 'next/server';
 import openai from '../../../shared/openai';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { uploadImageToS3 } from '../../../shared/s3Uploader';
 import fetch from 'node-fetch';
 
 type SupportedSize = "256x256" | "512x512" | "1024x1024" | "1792x1024" | "1024x1792";
-
-const s3Client = new S3Client({
-  region: process.env.AWS_REGION || 'us-east-1',
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  },
-});
 
 export async function POST(request: Request) {
   const { prompt, model, resolution } = await request.json();
@@ -34,21 +26,10 @@ export async function POST(request: Request) {
       const imageResponse = await fetch(imageUrl);
       const imageBuffer = await imageResponse.arrayBuffer();
 
-      // Upload to S3
-      const fileName = `generated-image-${Date.now()}.png`;
-      const uploadParams = {
-        Bucket: process.env.S3_BUCKET_NAME!,
-        Key: fileName,
-        Body: Buffer.from(imageBuffer),
-        ContentType: 'image/png',
-      };
+      // Upload to S3 using the shared function
+      const s3Url = await uploadImageToS3(imageBuffer);
 
-      const command = new PutObjectCommand(uploadParams);
-      await s3Client.send(command);
-
-      const imageId = fileName.replace('generated-image-', '').replace('.png', '');
-      const s3Url = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
-      console.log('Image uploaded to S3:', s3Url);
+      const imageId = s3Url.split('/').pop()?.replace('generated-image-', '').replace('.png', '') || '';
 
       return NextResponse.json({ imageUrl: s3Url, imageId });
     } else {
@@ -59,20 +40,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to generate or upload image' }, { status: 500 });
   }
 }
-
-// Commenting out email sending function
-/*
-async function sendEmailInBackground(imageUrl: string, prompt: string, model: string, resolution: string) {
-  try {
-    console.log('Sending email with image URL...');
-    // Send email with the image URL
-    const emailResult = await sendEmail(
-      { name: model, email: '', message: prompt },
-      { imageUrl: imageUrl, resolution: resolution }
-    );
-    console.log('Email sent result:', emailResult);
-  } catch (error) {
-    console.error('Error in sendEmailInBackground:', error);
-  }
-}
-*/
