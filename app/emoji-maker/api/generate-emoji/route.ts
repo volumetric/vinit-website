@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { uploadImageToS3 } from '@/app/shared/s3Uploader';
+import { connectToDatabase } from '@/app/shared/mongodb';
 
 // Dynamically import Replicate to avoid issues with Edge Runtime
 const Replicate = (async () => {
@@ -17,8 +19,8 @@ const debugLog = (...args: unknown[]) => {
   }
 };
 
-export const runtime = 'edge'; // Optional: Use Edge Runtime
-export const maxDuration = 300; // This sets the maximum duration to 300 seconds (5 minutes)
+// export const runtime = 'edge'; // Optional: Use Edge Runtime
+// export const maxDuration = 300; // This sets the maximum duration to 300 seconds (5 minutes)
 
 export async function POST(request: Request) {
   const { prompt } = await request.json();
@@ -48,11 +50,48 @@ export async function POST(request: Request) {
     };
 
     const output = await replicate.run("fofr/sdxl-emoji:dee76b5afde21b0f01ed7925f0665b7e879c50ee718c5f78a9d38e04d523cc5e", { input });
-    console.log(output)
+    debugLog('Replicate API response:', output);
 
     if (Array.isArray(output) && output.length > 0) {
       debugLog('Successfully generated emoji URL:', output);
-      return NextResponse.json({ emojiUrl: output });
+      
+      const originalUrl = output[0];
+      
+      // Start the S3 upload process
+      const uploadPromise = (async () => {
+        try {
+          debugLog('Fetching image from URL:', originalUrl);
+          const imageResponse = await fetch(originalUrl);
+          const imageBuffer = await imageResponse.arrayBuffer();
+          debugLog('Image fetched, uploading to S3');
+          const s3Url = await uploadImageToS3(imageBuffer, 'image/png', 'emoji-maker');
+          debugLog('S3 upload successful, URL:', s3Url);
+          
+          // Save to MongoDB
+          debugLog('Connecting to MongoDB');
+          const { db } = await connectToDatabase();
+          debugLog('Inserting emoji data into MongoDB');
+          const result = await db.collection('emoji-maker').insertOne({
+            prompt,
+            originalUrl,
+            s3Url,
+            createdAt: new Date()
+          });
+          debugLog('MongoDB insertion successful, inserted ID:', result.insertedId);
+          
+          return s3Url;
+        } catch (uploadError) {
+          console.error('Error uploading to S3 or saving to MongoDB:', uploadError);
+          debugLog('Error details:', uploadError);
+          return null;
+        }
+      })();
+
+      debugLog('Returning response with originalUrl and uploadPromise');
+      return NextResponse.json({ 
+        emojiUrl: originalUrl,
+        uploadPromise: uploadPromise
+      });
     } else {
       debugLog('Error: Unexpected output format from Replicate API:', output);
       return NextResponse.json({ error: 'Unexpected output format from API' }, { status: 500 });

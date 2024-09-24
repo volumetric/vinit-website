@@ -8,8 +8,8 @@ const s3Client = new S3Client({
   },
 });
 
-export async function uploadImageToS3(imageBuffer: ArrayBuffer, contentType: string = 'image/png'): Promise<string> {
-  const fileName = `generated-image-${Date.now()}.png`;
+export async function uploadImageToS3(imageBuffer: ArrayBuffer, contentType: string = 'image/png', path: string = ''): Promise<string> {
+  const fileName = `${path}/${Date.now()}.png`;
   const uploadParams = {
     Bucket: process.env.S3_BUCKET_NAME!,
     Key: fileName,
