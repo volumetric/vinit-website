@@ -42,6 +42,8 @@ const EmojiMaker = () => {
   const generateEmoji = async () => {
     debugLog('Generating emoji with prompt:', prompt);
     setIsGenerating(true);
+    setGeneratedEmoji(null); // Reset the generated emoji
+    setImageError(false); // Reset any previous image errors
 
     try {
       const controller = new AbortController();
@@ -138,7 +140,11 @@ const EmojiMaker = () => {
         </Button>
       </div>
       <div className="relative w-32 h-32 mx-auto">
-        {generatedEmoji && !imageError ? (
+        {isGenerating ? (
+          <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
+            <Loader2 className="animate-spin" />
+          </div>
+        ) : generatedEmoji && !imageError ? (
           <>
             <Image 
               src={generatedEmoji} 
@@ -157,8 +163,8 @@ const EmojiMaker = () => {
             </div>
           </>
         ) : (
-          <div className="w-full h-32 flex items-center justify-center bg-gray-200 text-gray-400">
-            {isGenerating ? <Loader2 className="animate-spin" /> : (imageError ? 'Failed to load image' : 'No emoji yet')}
+          <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
+            {imageError ? 'Failed to load image' : 'No emoji yet'}
           </div>
         )}
       </div>
