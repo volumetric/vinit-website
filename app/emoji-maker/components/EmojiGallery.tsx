@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card } from '../../../components/ui/card';
-import { Download, Heart } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 import Image from 'next/image';
 import { useEmojiContext } from './EmojiContext'; // We'll create this context
@@ -59,6 +59,23 @@ const EmojiGallery = () => {
     console.error(`Failed to load image for emoji ${emojiId}`);
   };
 
+  const handleDownload = (emojiUrl: string, prompt: string) => {
+    fetch(emojiUrl)
+      .then(response => response.blob())
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        // Use the prompt as the filename, replacing spaces with underscores
+        a.download = `emoji_${prompt.replace(/\s+/g, '_')}.png`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+      })
+      .catch(error => console.error('Error downloading emoji:', error));
+  };
+
   return (
     <div>
       <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Generated Emojis</h2>
@@ -86,14 +103,13 @@ const EmojiGallery = () => {
                 </div>
                 <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black bg-opacity-50">
                   <p className="text-white text-center text-sm mb-2 px-2">{emoji.prompt}</p>
-                  <div className="flex">
-                    <Button variant="ghost" size="icon">
-                      <Download className="h-6 w-6 text-white" />
-                    </Button>
-                    <Button variant="ghost" size="icon">
-                      <Heart className="h-6 w-6 text-white" />
-                    </Button>
-                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => handleDownload(emoji.s3Url, emoji.prompt)}
+                  >
+                    <Download className="h-6 w-6 text-white" />
+                  </Button>
                 </div>
               </Card>
             ))}

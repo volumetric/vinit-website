@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { Input } from '../../../components/ui/input';
 import { Button } from '../../../components/ui/button';
 import { Card } from '../../../components/ui/card';
-import { Loader2, Download, Heart, Shuffle } from 'lucide-react';
+import { Loader2, Download, Shuffle } from 'lucide-react';
 import { useEmojiContext } from './EmojiContext'; // We'll create this context
 
 // Debug flag
@@ -114,7 +114,19 @@ const EmojiMaker = () => {
 
   const handleDownload = () => {
     if (generatedEmoji) {
-      window.open(generatedEmoji, '_blank');
+      fetch(generatedEmoji)
+        .then(response => response.blob())
+        .then(blob => {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.style.display = 'none';
+          a.href = url;
+          a.download = `emoji_${prompt.replace(/\s+/g, '_')}.png`;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+        })
+        .catch(error => console.error('Error downloading emoji:', error));
     }
   };
 
@@ -156,9 +168,6 @@ const EmojiMaker = () => {
             <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black bg-opacity-50">
               <Button variant="ghost" size="icon" onClick={handleDownload}>
                 <Download className="h-6 w-6 text-white" />
-              </Button>
-              <Button variant="ghost" size="icon">
-                <Heart className="h-6 w-6 text-white" />
               </Button>
             </div>
           </>
