@@ -36,6 +36,12 @@ const tools = [
     description: "Analyze and describe OpenAPI specifications with ease.",
     external: false
   },
+  {
+    name: "Cyber Sign",
+    href: "/cyber-sign",
+    description: "Digitally sign PDF documents with ease",
+    external: false
+  },
 ]
 
 export function MainNav() {

@@ -1,3 +1,4 @@
+import React from 'react';
 import type { Metadata } from "next";
 import "./globals.css";
 import { Inter } from 'next/font/google';
@@ -18,8 +19,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" data-new-gr-c-s-check-loaded="" data-gr-ext-installed="">
+      <body data-new-gr-c-s-check-loaded="" data-gr-ext-installed="" className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <div className="flex min-h-screen flex-col">
             <header className="container">
