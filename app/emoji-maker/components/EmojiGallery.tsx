@@ -5,6 +5,7 @@ import { Card } from '../../../components/ui/card';
 import { Download, Heart } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 import Image from 'next/image';
+import { useEmojiContext } from './EmojiContext'; // We'll create this context
 
 interface Emoji {
   _id: string;
@@ -19,6 +20,7 @@ const EmojiGallery = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+  const { newEmoji } = useEmojiContext(); // Get the newEmoji from context
 
   const fetchEmojis = async (page: number) => {
     setIsLoading(true);
@@ -41,6 +43,12 @@ const EmojiGallery = () => {
   useEffect(() => {
     fetchEmojis(currentPage);
   }, [currentPage]);
+
+  useEffect(() => {
+    if (newEmoji) {
+      setEmojis(prevEmojis => [newEmoji, ...prevEmojis.slice(0, 9)]);
+    }
+  }, [newEmoji]);
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);

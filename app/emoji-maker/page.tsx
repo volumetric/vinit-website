@@ -1,16 +1,20 @@
+import React from 'react';
 import EmojiMaker from './components/EmojiMaker';
 import EmojiGallery from './components/EmojiGallery';
+import { EmojiProvider } from './components/EmojiContext';
 
-export default function Home() {
+const EmojiMakerPage = () => {
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl font-bold text-center mb-8 text-gray-800 dark:text-gray-100">Emoji Generator</h1>
-        <div className="flex justify-center mb-12">
+    <EmojiProvider>
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-8">Emoji Maker</h1>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <EmojiMaker />
+          <EmojiGallery />
         </div>
-        <EmojiGallery />
       </div>
-    </div>
+    </EmojiProvider>
   );
-}
+};
+
+export default EmojiMakerPage;

@@ -6,6 +6,7 @@ import { Input } from '../../../components/ui/input';
 import { Button } from '../../../components/ui/button';
 import { Card } from '../../../components/ui/card';
 import { Loader2, Download, Heart } from 'lucide-react';
+import { useEmojiContext } from './EmojiContext'; // We'll create this context
 
 // Debug flag
 const DEBUG = true;
@@ -21,6 +22,8 @@ const EmojiMaker = () => {
   const [generatedEmoji, setGeneratedEmoji] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [imageError, setImageError] = useState(false);
+
+  const { addEmoji } = useEmojiContext(); // Get the addEmoji function from context
 
   const generateEmoji = async () => {
     debugLog('Generating emoji with prompt:', prompt);
@@ -47,13 +50,49 @@ const EmojiMaker = () => {
 
       const data = await response.json();
       debugLog('Emoji generated:', data.emojiUrl);
-      setGeneratedEmoji(Array.isArray(data.emojiUrl) ? data.emojiUrl[0] : data.emojiUrl);
+      const emojiUrl = Array.isArray(data.emojiUrl) ? data.emojiUrl[0] : data.emojiUrl;
+      setGeneratedEmoji(emojiUrl);
+
+      // Submit the generated emoji
+      await submitEmoji(emojiUrl);
+
     } catch (error) {
       console.error('Error generating emoji:', error);
       debugLog('Error generating emoji:', error);
       // You might want to set an error state here and display it to the user
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const submitEmoji = async (emojiUrl: string) => {
+    try {
+      const response = await fetch('/emoji-maker/api/submit-emoji', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt, imageUrl: emojiUrl }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit emoji');
+      }
+
+      const data = await response.json();
+      debugLog('Emoji submitted:', data);
+
+      // Add the new emoji to the gallery
+      addEmoji({
+        _id: data.emojiId,
+        prompt,
+        s3Url: data.s3Url,
+        createdAt: new Date().toISOString(),
+      });
+
+    } catch (error) {
+      console.error('Error submitting emoji:', error);
+      debugLog('Error submitting emoji:', error);
     }
   };
 
