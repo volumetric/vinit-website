@@ -56,41 +56,10 @@ export async function POST(request: Request) {
       debugLog('Successfully generated emoji URL:', output);
       
       const originalUrl = output[0];
-      
-      // Start the S3 upload process
-      const uploadPromise = (async () => {
-        try {
-          debugLog('Fetching image from URL:', originalUrl);
-          const imageResponse = await fetch(originalUrl);
-          const imageBuffer = await imageResponse.arrayBuffer();
-          debugLog('Image fetched, uploading to S3');
-          const s3Url = await uploadImageToS3(imageBuffer, 'image/png', 'emoji-maker');
-          debugLog('S3 upload successful, URL:', s3Url);
-          
-          // Save to MongoDB
-          debugLog('Connecting to MongoDB');
-          const { db } = await connectToDatabase();
-          debugLog('Inserting emoji data into MongoDB');
-          const result = await db.collection('emoji-maker').insertOne({
-            prompt,
-            originalUrl,
-            s3Url,
-            createdAt: new Date()
-          });
-          debugLog('MongoDB insertion successful, inserted ID:', result.insertedId);
-          
-          return s3Url;
-        } catch (uploadError) {
-          console.error('Error uploading to S3 or saving to MongoDB:', uploadError);
-          debugLog('Error details:', uploadError);
-          return null;
-        }
-      })();
 
-      debugLog('Returning response with originalUrl and uploadPromise');
+      debugLog('Returning response with originalUrl');
       return NextResponse.json({ 
         emojiUrl: originalUrl,
-        uploadPromise: uploadPromise
       });
     } else {
       debugLog('Error: Unexpected output format from Replicate API:', output);
