@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { Input } from '../../../components/ui/input';
 import { Button } from '../../../components/ui/button';
 import { Card } from '../../../components/ui/card';
-import { Loader2, Download, Heart } from 'lucide-react';
+import { Loader2, Download, Heart, Shuffle } from 'lucide-react';
 import { useEmojiContext } from './EmojiContext'; // We'll create this context
 
 // Debug flag
@@ -24,6 +24,20 @@ const EmojiMaker = () => {
   const [imageError, setImageError] = useState(false);
 
   const { addEmoji } = useEmojiContext(); // Get the addEmoji function from context
+
+  const generateRandomPrompt = () => {
+    const adjectives = ['cute', 'funny', 'happy', 'sad', 'angry', 'excited', 'sleepy'];
+    const subjects = ['cat', 'dog', 'bird', 'fish', 'robot', 'alien', 'monster'];
+    const actions = ['floating in space', 'riding a bicycle', 'eating pizza', 'playing guitar', 'dancing', 'reading a book', 'swimming'];
+
+    const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+    const randomSubject = subjects[Math.floor(Math.random() * subjects.length)];
+    const randomAction = actions[Math.floor(Math.random() * actions.length)];
+
+    const newPrompt = `a ${randomAdjective} ${randomSubject} ${randomAction}`;
+    setPrompt(newPrompt);
+    debugLog('Generated new prompt:', newPrompt);
+  };
 
   const generateEmoji = async () => {
     debugLog('Generating emoji with prompt:', prompt);
@@ -116,6 +130,9 @@ const EmojiMaker = () => {
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
         />
+        <Button onClick={generateRandomPrompt} variant="outline" size="icon">
+          <Shuffle className="h-4 w-4" />
+        </Button>
         <Button onClick={generateEmoji} disabled={isGenerating}>
           {isGenerating ? <Loader2 className="animate-spin" /> : 'Generate'}
         </Button>
