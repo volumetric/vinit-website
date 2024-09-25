@@ -37,9 +37,9 @@ const tools = [
     external: false
   },
   {
-    name: "Cyber Sign",
+    name: "Cyber Sign (WIP)",
     href: "/cyber-sign",
-    description: "Digitally sign PDF documents with ease",
+    description: "Digitally sign PDF documents with ease (Work-In-Progress)",
     external: false
   },
 ]
