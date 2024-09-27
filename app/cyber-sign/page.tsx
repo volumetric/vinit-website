@@ -24,7 +24,7 @@ export default function CyberSignPage() {
       <h1 className="text-3xl font-bold mb-6">Cyber-Sign: eSignature Tool (WIP)</h1>
       <PDFUploader onUpload={handlePdfUpload} />
       <SignatureCanvas />
-      <PDFViewer pdfUrl={uploadedPdfUrl} />
+      {uploadedPdfUrl && <PDFViewer pdfUrl={uploadedPdfUrl} />}
     </div>
   );
 }
