@@ -42,6 +42,12 @@ const tools = [
     description: "Digitally sign PDF documents with ease (Work-In-Progress)",
     external: false
   },
+  {
+    name: "Meme Generator (WIP)",
+    href: "/meme-generator",
+    description: "Create memes with AI (Work-In-Progress)",
+    external: false
+  },
 ]
 
 export function MainNav() {
