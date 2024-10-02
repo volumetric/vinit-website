@@ -8,7 +8,7 @@ const SignatureCanvas = dynamic(() => import('./components/SignatureCanvas'), { 
 const PDFViewer = dynamic(() => import('./components/PDFViewer'), { ssr: false });
 
 export default function CyberSignPage() {
-  const [uploadedPdfUrl, setUploadedPdfUrl] = useState<string | null>(null);
+  const [uploadedPdfUrl, setUploadedPdfUrl] = useState<string | null>("http://localhost:3000/sample.pdf");
 
   const handlePdfUpload = (url: string) => {
     console.log('PDF uploaded, URL:', url);
@@ -24,7 +24,7 @@ export default function CyberSignPage() {
       <h1 className="text-3xl font-bold mb-6">Cyber-Sign: eSignature Tool (WIP)</h1>
       <PDFUploader onUpload={handlePdfUpload} />
       <SignatureCanvas />
-      {uploadedPdfUrl && <PDFViewer pdfUrl={uploadedPdfUrl} />}
+      <PDFViewer pdfUrl={uploadedPdfUrl} />
     </div>
   );
 }
