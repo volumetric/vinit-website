@@ -1,34 +1,6 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/app/shared/mongodb';
-
-import OpenAI from 'openai';
-
-// Setup OpenAI configuration
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
-
-// Vector Index Name for Meme Template Names: "meme_name_vector_index"
-// {
-//   "fields": [
-//     {
-//       "type": "vector",
-//       "path": "name_embedding",
-//       "numDimensions": 1536,
-//       "similarity": "dotProduct"
-//     }
-//   ]
-// }
-
-// Function to get the embeddings using the OpenAI API
-export async function createEmbedding(text: string) {
-    const response = await openai.embeddings.create({
-        model: "text-embedding-3-small",
-        input: text,
-        encoding_format: "float",
-    });
-    return response.data[0].embedding;
-}
+import { createEmbedding } from '@/app/shared/openai';
 
 export async function GET(request: Request) {
     try {
