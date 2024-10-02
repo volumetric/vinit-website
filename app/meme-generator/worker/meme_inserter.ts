@@ -1,6 +1,6 @@
-// #TOUSE Need to set these env variables in this script before running it
-// process.env.MONGODB_URI;
-// process.env.MONGODB_DB;
+// To run this script independently, copy environment variables from .env.local file
+process.env.MONGODB_URI = "";
+process.env.MONGODB_DB = "vinit-agrawal-website";
 
 import { connectToDatabase } from '../../shared/mongodb';
 import fs from 'fs/promises';
