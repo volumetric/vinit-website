@@ -1,13 +1,42 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MemePromptForm from './components/MemePromptForm';
 import MemeGrid from './components/MemeGrid';
 import MemeActions from './components/MemeActions';
+import MemeGallery from './components/MemeGallery';
+
+interface MemeTemplate {
+  name: string;
+  media: {
+    image_url: string;
+    video_url: string;
+    gif_url: string;
+  };
+}
 
 export default function MemeGeneratorPage() {
   const [generatedMemes, setGeneratedMemes] = useState<string[]>([]);
   const [selectedMeme, setSelectedMeme] = useState<string | null>(null);
+  const [memeTemplates, setMemeTemplates] = useState<MemeTemplate[]>([]);
+
+  useEffect(() => {
+    fetchMemeTemplates();
+  }, []);
+
+  const fetchMemeTemplates = async () => {
+    try {
+      const response = await fetch('meme-generator/api/meme-templates');
+      if (response.ok) {
+        const data = await response.json();
+        setMemeTemplates(data);
+      } else {
+        console.error('Failed to fetch meme templates');
+      }
+    } catch (error) {
+      console.error('Error fetching meme templates:', error);
+    }
+  };
 
   const handleMemeGeneration = async (prompt: string) => {
     // TODO: Implement API call to generate memes
@@ -45,6 +74,7 @@ export default function MemeGeneratorPage() {
       <MemePromptForm onSubmit={handleMemeGeneration} />
       <MemeGrid memes={generatedMemes} onSelect={handleMemeSelect} selectedMeme={selectedMeme} />
       {selectedMeme && <MemeActions onUpscale={handleUpscale} onVary={handleVary} />}
+      <MemeGallery memes={memeTemplates} itemsPerPage={20} />
     </div>
   );
 }
