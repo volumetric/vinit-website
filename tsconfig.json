@@ -10,7 +10,7 @@
     "strict": true,
     "noEmit": true,
     "esModuleInterop": true,
-    "module": "commonjs",
+    "module": "esnext",  // use "commonjs" if you want to run a .ts file as a node script
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
