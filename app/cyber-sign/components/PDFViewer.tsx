@@ -1,13 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
 // Set the worker source for pdfjs
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 // pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
 
 // pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/legacy/build/pdf.worker.min.js`;
@@ -30,27 +30,21 @@ interface PDFViewerProps {
 }
 
 const PDFViewer: React.FC<PDFViewerProps> = ({ pdfUrl }) => {
-  console.log('Inside PDFViewer component');
+  const [numPages, setNumPages] = useState<number | null>(null);
+  const [pageNumber, setPageNumber] = useState(1);
+
+  useEffect(() => {
+    if (pdfUrl) {
+      // Reset page number when a new PDF is loaded
+      setPageNumber(1);
+    }
+  }, [pdfUrl]);
 
   if (!pdfUrl) {
-    console.log('No PDF URL provided');
-    return <div>No PDF to show yet.</div>;
+    return <div>No PDF file selected</div>;
   }
 
-  const [numPages, setNumPages] = React.useState<number | null>(null);
-  const [pageNumber, setPageNumber] = React.useState<number>(1);
-
-  console.log('PDFViewer: pdfUrl', pdfUrl);
-  console.log('PDFViewer: numPages', numPages);
-  console.log('PDFViewer: pageNumber', pageNumber);
-
-  React.useEffect(() => {
-    console.log('PDFViewer: useEffect triggered');
-  }, [pdfUrl, numPages, pageNumber]);
-
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
-    console.log('PDF document loaded successfully');
-    console.log('Number of pages:', numPages);
     setNumPages(numPages);
   };
 
@@ -79,6 +73,5 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ pdfUrl }) => {
     </div>
   );
 };
-
 console.log('Exporting PDFViewer component');
 export default PDFViewer;
