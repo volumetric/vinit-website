@@ -1,21 +1,60 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import MemeModal from './MemeModal'; // We'll create this component next
+import MemeModal from './MemeModal'; // Ensure MemeModal.tsx is in the same directory
 
 interface MemeTemplate {
-  name: string;
-  url: string;
-  image_url: string;
-  keywords?: string[];
-  year?: number;
-  title: string;
-  content?: any[]; // Add this to match the sample data structure
+  _id?: { $oid: string };
+  title?: string;
+  url?: string;
+  kym_url?: string;
+  image_url?: string; 
+  image_alt_text?: string;
+  image_title?: string;
+  added_on?: {
+    date: string;
+    user: string;
+  };
+  content?: Array<{
+    heading: string;
+    text: string[];
+    image_url: string[];
+    yt_videoid: string[];
+    a_urls: string[];
+  }>;
+  external_reference_urls?: string[];
+  image?: {
+    image_url: string;
+    image_alt_text: string;
+    image_title: string;
+  };
+  last_changed_on?: {
+    date: string;
+    user: string;
+  };
   metadata?: {
-    category?: string;
-    status?: string;
-    year?: string;
-    origin?: string;
-    tags?: string[];
+    category: string;
+    status: string;
+    types: string[];
+    year: string;
+    origin: string;
+    tags: string[];
+  };
+  parent?: {
+    name: string;
+    url: string;
+  };
+  stats?: {
+    fav_count: { $numberInt: string };
+    views_count: { $numberInt: string };
+    videos_count: { $numberInt: string };
+    photos_count: { $numberInt: string };
+    comments_count: { $numberInt: string };
+  };
+  created_at?: {
+    $date: { $numberLong: string };
+  };
+  updated_at?: {
+    $date: { $numberLong: string };
   };
 }
 
@@ -135,8 +174,8 @@ const MemeGallery: React.FC<MemeGalleryProps> = ({ memes, itemsPerPage, isLoadin
         {currentMemes.map((meme, index) => (
           <div key={index} className="relative aspect-square group cursor-pointer" onClick={() => openModal(meme)}>
             <Image
-              src={meme.image_url}
-              alt={meme.title}
+              src={meme.image_url ?? ''}
+              alt={meme.title ?? ''}
               layout="fill"
               objectFit="cover"
               className="rounded-lg"

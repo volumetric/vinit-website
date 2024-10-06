@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import Image from 'next/image';
 
 interface MemeModalProps {
@@ -7,9 +7,24 @@ interface MemeModalProps {
 }
 
 const MemeModal: React.FC<MemeModalProps> = ({ meme, onClose }) => {
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [onClose]);
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-950 text-gray-200 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <div ref={modalRef} className="bg-gray-950 text-gray-200 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-gray-900 px-6 py-4 rounded-t-lg flex justify-between items-center">
           <h2 className="text-2xl font-bold truncate">{meme.title}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-200 transition-colors">
