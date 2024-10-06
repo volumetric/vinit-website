@@ -36,6 +36,7 @@
     ".next/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "app/meme-generator/worker/meme_scraping/meme_scraper_and_inserter.ts"
   ]
 }
