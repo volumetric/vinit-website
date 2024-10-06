@@ -1,3 +1,8 @@
+// To run this script independently, copy environment variables from .env.local file
+process.env.MONGODB_URI = "";
+process.env.MONGODB_DB = "vinit-agrawal-website";
+
+
 import { MongoClient, Db } from 'mongodb';
 
 let cachedClient: MongoClient | null = null;

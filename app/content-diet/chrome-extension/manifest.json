@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Content Diet",
+  "version": "1.0",
+  "description": "Help me understand key information from YouTube videos and other content, in a fast and more effective way",
+  "permissions": ["storage", "tabs"],
+  "host_permissions": ["https://www.youtube.com/*"],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*"],
+      "js": ["content.js"]
+    }
+  ]
+}

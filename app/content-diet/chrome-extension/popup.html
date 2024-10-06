@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>YouTube Feed Controller</title>
+  <link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+<body>
+  <h1>YouTube Feed Controller</h1>
+  
+  <h2>Topics</h2>
+  <div>
+    <h3>Whitelist</h3>
+    <input type="text" id="topic-whitelist">
+    <button id="add-topic-whitelist">Add</button>
+    <ul id="topic-whitelist-items"></ul>
+  </div>
+  <div>
+    <h3>Blacklist</h3>
+    <input type="text" id="topic-blacklist">
+    <button id="add-topic-blacklist">Add</button>
+    <ul id="topic-blacklist-items"></ul>
+  </div>
+
+  <h2>Channels</h2>
+  <div>
+    <h3>Whitelist</h3>
+    <input type="text" id="channel-whitelist">
+    <button id="add-channel-whitelist">Add</button>
+    <ul id="channel-whitelist-items"></ul>
+  </div>
+  <div>
+    <h3>Blacklist</h3>
+    <input type="text" id="channel-blacklist">
+    <button id="add-channel-blacklist">Add</button>
+    <ul id="channel-blacklist-items"></ul>
+  </div>
+
+  <button id="save">Save Settings</button>
+
+  <script src="popup.js"></script>
+</body>
+</html>
