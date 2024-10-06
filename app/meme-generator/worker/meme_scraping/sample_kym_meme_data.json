@@ -1,0 +1,156 @@
+{
+    "_id": {
+        "$oid": "67001054cb9edb023d198ea2"
+    },
+    "title": "Baka",
+    "url": "https://knowyourmeme.com/memes/baka",
+    "kym_url": "https://knowyourmeme.com/memes/baka",
+    "image_url": "https://i.kym-cdn.com/entries/icons/medium/000/018/403/Baka_Cover_page.jpg",
+    "image_alt_text": "BAKA! in Japanese characters",
+    "image_title": "Baka",
+    "added_on": {
+        "date": "2015-07-04T10:25:00.000Z",
+        "user": "justThisFool"
+    },
+    "content": [
+        {
+            "heading": "About",
+            "text": [
+                "Baka is a Japanese word that directly translates to \"fool\" or any of its synonyms such as \"idiot\" and \"moron.\" Online, the pejorative term has been used both ironically and unironically by Otakus and its detractors poking fun at anime culture alike."
+            ],
+            "image_url": [],
+            "yt_videoid": [],
+            "a_urls": [
+                "https://knowyourmeme.com/memes/subcultures/ironic-memes",
+                "https://knowyourmeme.com/memes/cultures/otaku",
+                "https://knowyourmeme.com/memes/cultures/anime-manga"
+            ]
+        },
+        {
+            "heading": "Origin",
+            "text": [
+                "Although the etymology of \"baka\" remains uncertain, some speculate that the word \"baka\" was first used in Chinese literature as early as in 246 B.C. However, the earliest known written usage of \"baka\" on record can be traced to an excerpt from the traditional historical epic Taiheiki which denotes bakamono (馬鹿者) being used as an insult in 1342 during the Nanboku-chō period (1336–1392) and the civil unrest between the Northern and Southern Courts. The definition of baka that is used today was thought to be used around 1663-1733, from the Sanskrit meaning “foolish.”[1]"
+            ],
+            "image_url": [],
+            "yt_videoid": [],
+            "a_urls": [
+                "#fn1"
+            ]
+        },
+        {
+            "heading": "Spread",
+            "text": [
+                "While the term is predominantly used as an insult by the Japanese-speaking population, \"baka\" gradually became associated with a popular trope in manga and animes, often used by tsundere girls to insult those whom they have crush on. Also being the name of popular anime and songs; such as Baka to Test to Shōkanjū and Triple Baka. Multiple definitions of the word have been uploaded by users of Urban Dictionary since 2003.[2]",
+                "",
+                "Apart from being added into conversations to replace the english word 'idiot', 'baka' is also commonly used at the end of phrases meant to convey an unconvincing tone of repulse, often with a stuttering effect. Images of animals and people alike that have been manipulated with Photoshop to have anime-style eyes and blushes are associated with these phrases."
+            ],
+            "image_url": [
+                "https://i.ytimg.com/vi/WviwYLZubSw/hqdefault.jpg",
+                "https://i.ytimg.com/vi/W2kmuSnrTTM/hqdefault.jpg"
+            ],
+            "yt_videoid": [
+                "WviwYLZubSw",
+                "W2kmuSnrTTM"
+            ],
+            "a_urls": [
+                "https://knowyourmeme.com/memes/tsundere",
+                "/memes/sites/urban-dictionary",
+                "#fn2",
+                "https://knowyourmeme.com/memes/subcultures/animals",
+                "https://knowyourmeme.com/memes/sites/photoshop"
+            ]
+        },
+        {
+            "heading": "Related Memes",
+            "text": [
+                "Tsundere Sharks is a photoshop meme in which photographs and illustrations of sharks are embellished with pink blushes and glowing anime eyes in the typical fashion of how tsundere characters are portrayed in anime.",
+                ""
+            ],
+            "image_url": [
+                "https://i.kym-cdn.com/photos/images/newsfeed/000/951/129/c34.jpg"
+            ],
+            "yt_videoid": [],
+            "a_urls": [
+                "https://knowyourmeme.com/memes/tsundere-sharks",
+                "https://knowyourmeme.com/memes/memes",
+                "https://knowyourmeme.com/photos/951129"
+            ]
+        },
+        {
+            "heading": "Search Interest",
+            "text": [],
+            "image_url": [],
+            "yt_videoid": [],
+            "a_urls": []
+        },
+        {
+            "heading": "External References",
+            "text": [],
+            "image_url": [],
+            "yt_videoid": [],
+            "a_urls": []
+        }
+    ],
+    "external_reference_urls": [
+        "#fnr1",
+        "https://en.wikipedia.org/wiki/Baka_(word)",
+        "#fnr2",
+        "https://www.urbandictionary.com/define.php?term=baka"
+    ],
+    "image": {
+        "image_url": "https://i.kym-cdn.com/entries/icons/mobile/000/018/403/Baka_Cover_page.jpg",
+        "image_alt_text": "BAKA! in Japanese characters",
+        "image_title": "Baka"
+    },
+    "last_changed_on": {
+        "date": "2020-09-03T13:06:00.000Z",
+        "user": "andcallmeshirley"
+    },
+    "metadata": {
+        "category": "Meme",
+        "status": "Confirmed",
+        "types": [],
+        "year": "1336",
+        "origin": "Japan",
+        "tags": [
+            "baka",
+            "anime",
+            "idiot",
+            "fool",
+            "yiffer",
+            "taiheiki",
+            "japanese",
+            "baka to test to shōkanjū",
+            "triple baka",
+            "Encyclopedia Dramatica",
+            "Urban Dictionary",
+            "Wikipedia"
+        ]
+    },
+    "parent": {
+        "name": "Otaku",
+        "url": "/memes/cultures/otaku"
+    },
+    "stats": {
+        "fav_count": {
+            "$numberInt": "16"
+        },
+        "views_count": {
+            "$numberInt": "63708"
+        },
+        "videos_count": {
+            "$numberInt": "1"
+        },
+        "photos_count": {
+            "$numberInt": "1"
+        },
+        "comments_count": {
+            "$numberInt": "28"
+        }
+    },
+    "updated_at": {
+        "$date": {
+            "$numberLong": "1728153547306"
+        }
+    }
+}

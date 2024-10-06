@@ -22,12 +22,14 @@ export default function MemeGeneratorPage() {
   const [searchResults, setSearchResults] = useState<MemeTemplate[]>([]);
   const [selectedMeme, setSelectedMeme] = useState<string | null>(null);
   const [memeTemplates, setMemeTemplates] = useState<MemeTemplate[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchMemeTemplates();
   }, []);
 
   const fetchMemeTemplates = async () => {
+    setIsLoading(true);
     try {
       const response = await fetch('meme-generator/api/meme-templates');
       if (response.ok) {
@@ -38,6 +40,8 @@ export default function MemeGeneratorPage() {
       }
     } catch (error) {
       console.error('Error fetching meme templates:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -77,19 +81,25 @@ export default function MemeGeneratorPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Meme Generator</h1>
-      <MemePromptForm onSubmit={handleMemeGeneration} />
-      {searchResults.length > 0 && (
-        <>
-          <h2 className="text-2xl font-bold mt-8 mb-4">Search Results</h2>
-          <SearchResultsGrid 
-            results={searchResults} 
-            onSelect={handleMemeSelect} 
-            selectedMeme={selectedMeme} 
-          />
-        </>
-      )}
-      {selectedMeme && <MemeActions onUpscale={handleUpscale} onVary={handleVary} />}
-      <MemeGallery memes={memeTemplates} itemsPerPage={20} />
+      <div className="mb-12">
+        <MemePromptForm onSubmit={handleMemeGeneration} />
+        {searchResults.length > 0 && (
+          <>
+            <h2 className="text-2xl font-bold mt-8 mb-4">Search Results</h2>
+            <SearchResultsGrid 
+              results={searchResults} 
+              onSelect={handleMemeSelect} 
+              selectedMeme={selectedMeme} 
+            />
+          </>
+        )}
+        {selectedMeme && <MemeActions onUpscale={handleUpscale} onVary={handleVary} />}
+      </div>
+      
+      <div className="border-t-2 pt-8">
+        <h2 className="text-3xl font-bold mb-6">Meme Gallery</h2>
+        <MemeGallery memes={memeTemplates} itemsPerPage={20} isLoading={isLoading} />
+      </div>
     </div>
   );
 }

@@ -7,7 +7,8 @@ const nextConfig = {
     domains: [
       'vinit-agrawal-website.s3.amazonaws.com',
       'replicate.delivery',
-      'vinit-agrawal-website.s3.us-east-1.amazonaws.com'
+      'vinit-agrawal-website.s3.us-east-1.amazonaws.com',
+      'i.kym-cdn.com'
     ],
   },
   webpack: (config) => {
