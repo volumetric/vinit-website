@@ -37,6 +37,7 @@
   ],
   "exclude": [
     "node_modules",
-    "app/meme-generator/worker/meme_scraping/meme_scraper_and_inserter.ts"
+    "app/meme-generator/worker/meme_scraping/meme_scraper_and_inserter.ts",
+    "app/content-diet/chrome-extension/marked.min.js"
   ]
 }
