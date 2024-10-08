@@ -1,0 +1,5 @@
+# Ignore minified files
+**/*.min.js
+
+# Specifically ignore marked.min.js
+app/content-diet/chrome-extension/marked.min.js
