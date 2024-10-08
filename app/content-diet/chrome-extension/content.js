@@ -42,8 +42,10 @@ function addContentDietTab() {
         <div class="content-diet-tab-pane active" id="description-tab"></div>
         <div class="content-diet-tab-pane" id="content-diet-tab">
           <button id="extractWisdomBtn" class="yt-spec-button-shape-next yt-spec-button-shape-next--tonal yt-spec-button-shape-next--mono yt-spec-button-shape-next--size-m">
-            <div class="yt-spec-button-shape-next__icon" style="height:24px;width:24px;">
-              <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="currentColor"></path></svg>
+            <div class="yt-spec-button-shape-next__icon" style="height:24px;width:24px;margin-right:8px;">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+              </svg>
             </div>
             <span class="yt-spec-button-shape-next__button-text-content">Extract Wisdom</span>
           </button>
@@ -98,7 +100,7 @@ function ensureContentDietTab() {
     if (attempts < maxAttempts) {
       setTimeout(tryAddingTab, interval);
     } else {
-      console.error('Failed to add Content Diet tab after ' + maxAttempts + ' attempts');
+      // console.error('Failed to add Content Diet tab after ' + maxAttempts + ' attempts');
     }
   }
 
@@ -126,34 +128,55 @@ async function handleExtractWisdom() {
     return;
   }
 
+  const extractWisdomBtn = document.querySelector('#extractWisdomBtn');
   const wisdomContent = document.querySelector('#extracted-wisdom-content');
-  wisdomContent.innerHTML = '<p>Extracting wisdom... Please wait.</p>';
 
-  // Mock function to get transcript (in a real scenario, you'd fetch this from YouTube's API)
-  const transcript = await getMockTranscript(videoId);
+  // Disable the button and change its appearance
+  extractWisdomBtn.disabled = true;
+  extractWisdomBtn.classList.add('disabled');
 
-  // Mock API call to extract wisdom
-  const wisdom = await mockExtractWisdom(transcript);
+  wisdomContent.innerHTML = `
+    <div class="loader">
+      <div class="spinner"></div>
+      <p>Extracting wisdom... Please wait.</p>
+    </div>
+  `;
 
-  // Display the extracted wisdom
-  displayWisdom(wisdom);
+  try {
+    chrome.runtime.sendMessage({action: "extractWisdom", videoId: videoId}, (response) => {
+      if (response.success) {
+        displayWisdom(response.data.cognitive_tool_result.tool_output);
+      } else {
+        throw new Error(response.error);
+      }
+    });
+  } catch (error) {
+    console.error('Error extracting wisdom:', error);
+    wisdomContent.innerHTML = `<p class="error">Error extracting wisdom: ${error.message}</p>`;
+  } finally {
+    // Re-enable the button and restore its appearance
+    extractWisdomBtn.disabled = false;
+    extractWisdomBtn.classList.remove('disabled');
+  }
 }
 
 // Update displayWisdom function
-function displayWisdom(wisdom) {
+function displayWisdom(markdown) {
   const wisdomContent = document.querySelector('#extracted-wisdom-content');
-  wisdomContent.innerHTML = `
-    <h3>Extracted Wisdom</h3>
-    <p><strong>Summary:</strong> ${wisdom.summary}</p>
-    <h4>Key Points:</h4>
-    <ul>
-      ${wisdom.keyPoints.map(point => `<li>${point}</li>`).join('')}
-    </ul>
-    <h4>Action Items:</h4>
-    <ul>
-      ${wisdom.actionItems.map(item => `<li>${item}</li>`).join('')}
-    </ul>
-  `;
+  wisdomContent.innerHTML = marked.parse(markdown);
+  
+  // Add classes to enhance styling
+  wisdomContent.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach(heading => {
+    heading.classList.add('wisdom-heading');
+  });
+  
+  wisdomContent.querySelectorAll('p').forEach(paragraph => {
+    paragraph.classList.add('wisdom-paragraph');
+  });
+  
+  wisdomContent.querySelectorAll('ul, ol').forEach(list => {
+    list.classList.add('wisdom-list');
+  });
 }
 
 // Update the styles
@@ -187,6 +210,58 @@ const styles = `
   }
   #extractWisdomBtn {
     margin-bottom: 16px;
+    transition: opacity 0.3s ease;
+  }
+  #extractWisdomBtn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  #extractWisdomBtn .yt-spec-button-shape-next__icon {
+    margin-right: 8px;
+  }
+  #extracted-wisdom-content {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .wisdom-heading {
+    margin-top: 24px;
+    margin-bottom: 16px;
+    font-weight: bold;
+  }
+  .wisdom-paragraph {
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  .wisdom-list {
+    margin-bottom: 16px;
+    padding-left: 24px;
+  }
+  .loader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border-left-color: var(--yt-spec-text-primary);
+    animation: spin 1s ease infinite;
+  }
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+  .error {
+    color: red;
+    font-weight: bold;
   }
 `;
 

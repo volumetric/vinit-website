@@ -3,15 +3,22 @@
   "name": "Content Diet",
   "version": "1.0",
   "description": "Help me understand key information from YouTube videos and other content, in a fast and more effective way",
-  "permissions": ["storage", "tabs"],
-  "host_permissions": ["https://www.youtube.com/*"],
+  "permissions": ["activeTab", "storage", "tabs"],
+  "host_permissions": [
+    "https://www.youtube.com/*",
+    "http://localhost:3000/*"
+  ],
   "action": {
     "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
   },
   "content_scripts": [
     {
       "matches": ["https://www.youtube.com/*"],
-      "js": ["content.js"]
+      "js": ["content.js", "marked.min.js"],
+      "css": ["content.css"]
     }
   ]
 }
