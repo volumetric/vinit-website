@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import MemeModal from './MemeModal'; // Ensure MemeModal.tsx is in the same directory
+import MemeModal from './MemeModal';
+import axios from 'axios';
 
 interface MemeTemplate {
   _id?: { $oid: string };
@@ -58,27 +59,40 @@ interface MemeTemplate {
   };
 }
 
-interface MemeGalleryProps {
-  memes: MemeTemplate[];
-  itemsPerPage: number;
-  isLoading: boolean;
+interface PaginatedResponse {
+  memeTemplates: MemeTemplate[];
+  currentPage: number;
+  totalPages: number;
+  totalCount: number;
 }
 
-const MemeGallery: React.FC<MemeGalleryProps> = ({ memes, itemsPerPage, isLoading }) => {
+interface MemeGalleryProps {
+  itemsPerPage: number;
+}
+
+const MemeGallery: React.FC<MemeGalleryProps> = ({ itemsPerPage }) => {
+  const [memes, setMemes] = useState<MemeTemplate[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [currentMemes, setCurrentMemes] = useState<MemeTemplate[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedMeme, setSelectedMeme] = useState<MemeTemplate | null>(null);
 
-  const totalPages = Math.ceil(memes.length / itemsPerPage);
-
   useEffect(() => {
-    updateCurrentMemes();
-  }, [currentPage, memes]);
+    fetchMemes(currentPage);
+  }, [currentPage]);
 
-  const updateCurrentMemes = () => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    setCurrentMemes(memes.slice(startIndex, endIndex));
+  const fetchMemes = async (page: number) => {
+    setIsLoading(true);
+    try {
+      const response = await axios.get<PaginatedResponse>(`/meme-generator/api/meme-templates?page=${page}`);
+      setMemes(response.data.memeTemplates);
+      setCurrentPage(response.data.currentPage);
+      setTotalPages(response.data.totalPages);
+    } catch (error) {
+      console.error('Error fetching meme templates:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const changePage = (newPage: number) => {
@@ -171,7 +185,7 @@ const MemeGallery: React.FC<MemeGalleryProps> = ({ memes, itemsPerPage, isLoadin
     <div className="mt-8">
       <h2 className="text-2xl font-bold mb-4">Meme Gallery</h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        {currentMemes.map((meme, index) => (
+        {memes.map((meme, index) => (
           <div key={index} className="relative aspect-square group cursor-pointer" onClick={() => openModal(meme)}>
             <Image
               src={meme.image_url ?? ''}
