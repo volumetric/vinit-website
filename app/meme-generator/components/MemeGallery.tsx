@@ -76,6 +76,7 @@ const MemeGallery: React.FC<MemeGalleryProps> = ({ itemsPerPage }) => {
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedMeme, setSelectedMeme] = useState<MemeTemplate | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchMemes(currentPage);
@@ -83,6 +84,7 @@ const MemeGallery: React.FC<MemeGalleryProps> = ({ itemsPerPage }) => {
 
   const fetchMemes = async (page: number) => {
     setIsLoading(true);
+    setError(null);
     try {
       const response = await axios.get<PaginatedResponse>(`/meme-generator/api/meme-templates?page=${page}`);
       setMemes(response.data.memeTemplates);
@@ -90,6 +92,8 @@ const MemeGallery: React.FC<MemeGalleryProps> = ({ itemsPerPage }) => {
       setTotalPages(response.data.totalPages);
     } catch (error) {
       console.error('Error fetching meme templates:', error);
+      setError(`Error getting page ${page} data. Please try again.`);
+      // Keep the current page data
     } finally {
       setIsLoading(false);
     }
@@ -184,26 +188,31 @@ const MemeGallery: React.FC<MemeGalleryProps> = ({ itemsPerPage }) => {
   return (
     <div className="mt-8">
       <h2 className="text-2xl font-bold mb-4">Meme Gallery</h2>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        {memes.map((meme, index) => (
-          <div key={index} className="relative aspect-square group cursor-pointer" onClick={() => openModal(meme)}>
-            <Image
-              src={meme.image_url ?? ''}
-              alt={meme.title ?? ''}
-              layout="fill"
-              objectFit="cover"
-              className="rounded-lg"
-              placeholder="blur"
-              blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
-            />
-            <div className="absolute inset-0 bg-black bg-opacity-50 text-white p-2 flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              <p className="font-bold text-sm">{meme.title}</p>
-              <p className="text-xs">{meme.metadata?.year || 'Year: N/A'}</p>
-              <p className="text-xs">{meme.metadata?.origin || 'Origin: N/A'}</p>
+      {error ? (
+        <div className="text-red-500 text-center mb-4">{error}</div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {memes.map((meme, index) => (
+            <div key={index} className="relative aspect-square group cursor-pointer" onClick={() => openModal(meme)}>
+              <Image
+                src={meme.image_url ?? ''}
+                alt={meme.title ?? ''}
+                layout="fill"
+                objectFit="cover"
+                className="rounded-lg"
+                placeholder="blur"
+                blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+              />
+              <div className="absolute inset-0 bg-black bg-opacity-50 text-white p-2 flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <p className="font-bold text-sm">{meme.title}</p>
+                <p className="text-xs">{meme.metadata?.year || 'Year: N/A'}</p>
+                <p className="text-xs">{meme.metadata?.origin || 'Origin: N/A'}</p>
+                <p className="text-xs">Views: {typeof meme.stats?.views_count === 'object' ? meme.stats.views_count.$numberInt : meme.stats?.views_count || 'N/A'}</p>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
       <div className="mt-6 flex justify-center items-center space-x-2">
         <button
           onClick={() => changePage(Math.max(currentPage - 1, 1))}

@@ -152,7 +152,7 @@ async function handleExtractWisdom() {
     });
   } catch (error) {
     console.error('Error extracting wisdom:', error);
-    wisdomContent.innerHTML = `<p class="error">Error extracting wisdom: ${error.message}</p>`;
+    displayError(error.message);
   } finally {
     // Re-enable the button and restore its appearance
     extractWisdomBtn.disabled = false;
@@ -263,6 +263,38 @@ const styles = `
     color: red;
     font-weight: bold;
   }
+  .content-diet-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px;
+    background-color: var(--yt-spec-badge-chip-background);
+    border-radius: 8px;
+    margin-top: 16px;
+  }
+
+  .content-diet-error-icon {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 16px;
+    color: var(--yt-spec-icon-disabled);
+  }
+
+  .content-diet-error p {
+    text-align: center;
+    margin-bottom: 16px;
+    color: var(--yt-spec-text-primary);
+  }
+
+  #retryExtractWisdom {
+    margin-top: 16px;
+  }
+
+  #extractWisdomBtn:disabled,
+  #extractWisdomBtn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 `;
 
 // Update the initialization
@@ -313,4 +345,25 @@ async function mockExtractWisdom(transcript) {
       "Action 3: Practice the techniques regularly"
     ]
   };
+}
+
+function displayError(errorMessage) {
+  const wisdomContent = document.querySelector('#extracted-wisdom-content');
+  wisdomContent.innerHTML = `
+    <div class="content-diet-error">
+      <div class="content-diet-error-icon">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+        </svg>
+      </div>
+      <p>${errorMessage}</p>
+      <button id="retryExtractWisdom" class="yt-spec-button-shape-next yt-spec-button-shape-next--tonal yt-spec-button-shape-next--mono yt-spec-button-shape-next--size-m">
+        Retry
+      </button>
+    </div>
+  `;
+
+  // Add event listener for the retry button
+  const retryButton = document.querySelector('#retryExtractWisdom');
+  retryButton.addEventListener('click', handleExtractWisdom);
 }

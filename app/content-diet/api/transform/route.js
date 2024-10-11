@@ -36,12 +36,27 @@ async function getYouTubeTranscript(videoId) {
 }
 
 async function callCognitiveTool(toolName, toolInput) {
+  const baseUrl = process.env.ASIMOV_COGNITIVE_TOOLS_URL;
+  const apiKey = process.env.ASIMOV_COGNITIVE_TOOLS_API_KEY;
+
+  if (!baseUrl) {
+    throw new Error('ASIMOV_COGNITIVE_TOOLS_URL is not set in the environment variables');
+  }
+
   try {
-    const response = await fetch('http://localhost:8020/api/tool/run', {
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+
+    if (apiKey) {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+    }
+
+    const url = `${baseUrl}/api/tool/run`;
+
+    const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: headers,
       body: JSON.stringify({
         tool_type: 'cognitive',
         tool_name: toolName,
@@ -51,10 +66,12 @@ async function callCognitiveTool(toolName, toolInput) {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorBody = await response.text();
+      throw new Error(`HTTP error! status: ${response.status}, body: ${errorBody}`);
     }
 
-    return await response.json();
+    const result = await response.json();
+    return result;
   } catch (error) {
     console.error('Error calling cognitive tool:', error);
     throw error;
@@ -65,7 +82,6 @@ export async function POST(req) {
   // Handle CORS
   const origin = req.headers.get('origin');
   
-  // Check if the origin is allowed (add chrome-extension:// to allow requests from your extension)
   const allowedOrigins = ['http://localhost:3000', 'https://www.youtube.com', 'chrome-extension://'];
   
   const isAllowed = allowedOrigins.some(allowedOrigin => 
@@ -73,14 +89,12 @@ export async function POST(req) {
   );
 
   if (isAllowed) {
-    // Set CORS headers
     const headers = {
       'Access-Control-Allow-Origin': origin,
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     };
 
-    // Handle preflight request
     if (req.method === 'OPTIONS') {
       return new NextResponse(null, { status: 200, headers });
     }

@@ -17,6 +17,7 @@ export async function GET(request: Request) {
         .sort({ _id: 1 })
         .skip(skip)
         .limit(limit)
+        .allowDiskUse(true) // Add this line
         .toArray(),
       memeTemplatesCollection.countDocuments({}),
     ]);
