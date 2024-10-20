@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { MainNav } from "@/components/main-nav"
 import { Footer } from "@/components/footer"
 
+// Check if the font is properly initialized
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {

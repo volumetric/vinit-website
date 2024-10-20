@@ -1,6 +1,14 @@
+let baseUrl = '';
+
+chrome.management.getSelf((extensionInfo) => {
+  baseUrl = extensionInfo.installType === 'development' 
+    ? 'http://localhost:3000' 
+    : 'https://vinitagrawal.com';
+});
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "extractWisdom") {
-    fetch('http://localhost:3000/content-diet/api/transform', {
+    fetch(`${baseUrl}/content-diet/api/transform`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

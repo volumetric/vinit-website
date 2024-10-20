@@ -1,31 +1,31 @@
-function filterYouTubeFeed() {
-  chrome.storage.sync.get(['topicWhitelist', 'topicBlacklist', 'channelWhitelist', 'channelBlacklist'], function(settings) {
-    // Select all video elements on the page
-    const videoElements = document.querySelectorAll('ytd-rich-item-renderer');
+// function filterYouTubeFeed() {
+//   chrome.storage.sync.get(['topicWhitelist', 'topicBlacklist', 'channelWhitelist', 'channelBlacklist'], function(settings) {
+//     // Select all video elements on the page
+//     const videoElements = document.querySelectorAll('ytd-rich-item-renderer');
 
-    videoElements.forEach(video => {
-      const channelName = video.querySelector('#text.ytd-channel-name').textContent.trim();
-      const videoTitle = video.querySelector('#video-title').textContent.trim();
+//     videoElements.forEach(video => {
+//       const channelName = video.querySelector('#text.ytd-channel-name').textContent.trim();
+//       const videoTitle = video.querySelector('#video-title').textContent.trim();
 
-      // Check if the video matches the user's preferences
-    //   if (shouldShowVideo(channelName, videoTitle, settings)) {
-    //     video.style.display = 'block';
-    //   } else {
-    //     video.style.display = 'none';
-    //   }
-    });
-  });
-}
+//       // Check if the video matches the user's preferences
+//     //   if (shouldShowVideo(channelName, videoTitle, settings)) {
+//     //     video.style.display = 'block';
+//     //   } else {
+//     //     video.style.display = 'none';
+//     //   }
+//     });
+//   });
+// }
 
-function shouldShowVideo(channelName, videoTitle, settings) {
-  // Implement logic to determine if the video should be shown based on user settings
-  // ... (implementation details)
-}
+// function shouldShowVideo(channelName, videoTitle, settings) {
+//   // Implement logic to determine if the video should be shown based on user settings
+//   // ... (implementation details)
+// }
 
-// Run the filter function when the page loads and whenever it changes
-filterYouTubeFeed();
-const observer = new MutationObserver(filterYouTubeFeed);
-observer.observe(document.body, { childList: true, subtree: true });
+// // Run the filter function when the page loads and whenever it changes
+// filterYouTubeFeed();
+// const observer = new MutationObserver(filterYouTubeFeed);
+// observer.observe(document.body, { childList: true, subtree: true });
 
 function addContentDietTab() {
   const descriptionElement = document.querySelector('#description-inner');
@@ -138,6 +138,7 @@ async function handleExtractWisdom() {
   wisdomContent.innerHTML = `
     <div class="loader">
       <div class="spinner"></div>
+      <br />
       <p>Extracting wisdom... Please wait.</p>
     </div>
   `;
@@ -326,26 +327,26 @@ async function getMockTranscript(videoId) {
   return `This is a mock transcript for video ${videoId}. It contains the full text of the video's speech.`;
 }
 
-// Mock API call to extract wisdom
-async function mockExtractWisdom(transcript) {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
+// // Mock API call to extract wisdom
+// async function mockExtractWisdom(transcript) {
+//   // Simulate API delay
+//   await new Promise(resolve => setTimeout(resolve, 1000));
 
-  // Return mock wisdom
-  return {
-    summary: "This video discusses important topics and provides valuable insights.",
-    keyPoints: [
-      "Point 1: Lorem ipsum dolor sit amet",
-      "Point 2: Consectetur adipiscing elit",
-      "Point 3: Sed do eiusmod tempor incididunt"
-    ],
-    actionItems: [
-      "Action 1: Implement the learned strategies",
-      "Action 2: Share the knowledge with others",
-      "Action 3: Practice the techniques regularly"
-    ]
-  };
-}
+//   // Return mock wisdom
+//   return {
+//     summary: "This video discusses important topics and provides valuable insights.",
+//     keyPoints: [
+//       "Point 1: Lorem ipsum dolor sit amet",
+//       "Point 2: Consectetur adipiscing elit",
+//       "Point 3: Sed do eiusmod tempor incididunt"
+//     ],
+//     actionItems: [
+//       "Action 1: Implement the learned strategies",
+//       "Action 2: Share the knowledge with others",
+//       "Action 3: Practice the techniques regularly"
+//     ]
+//   };
+// }
 
 function displayError(errorMessage) {
   const wisdomContent = document.querySelector('#extracted-wisdom-content');
