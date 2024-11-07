@@ -1,3 +1,6 @@
+'use client';
+
+import React from 'react';
 import Link from "next/link"
 import { ModeToggle } from "@/components/mode-toggle"
 import {
@@ -8,6 +11,9 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu"
+import { LoginModal } from "@/app/components/LoginModal"
+import { UserMenu } from "@/app/components/UserMenu"
+import { useAuth } from "@/app/components/AuthProvider"
 
 // Remove or comment out the unused projectCategories variable
 // const projectCategories = [
@@ -51,6 +57,8 @@ const tools = [
 ]
 
 export function MainNav() {
+  const { user } = useAuth()
+
   return (
     <nav className="sticky top-0 z-50 bg-background border-b">
       <div className="container flex items-center justify-between py-4">
@@ -69,25 +77,6 @@ export function MainNav() {
                 <NavigationMenuLink className="text-xl px-2">Contact</NavigationMenuLink>
               </Link>
             </NavigationMenuItem>
-            {/* <NavigationMenuItem>
-              <NavigationMenuTrigger className="text-xl px-2">Projects</NavigationMenuTrigger>
-              <NavigationMenuContent>
-                <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
-                  {projectCategories.map((category) => (
-                    <li key={category.name}>
-                      <NavigationMenuLink asChild>
-                        <Link
-                          href={category.href}
-                          className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground text-xl"
-                        >
-                          {category.name}
-                        </Link>
-                      </NavigationMenuLink>
-                    </li>
-                  ))}
-                </ul>
-              </NavigationMenuContent>
-            </NavigationMenuItem> */}
             <NavigationMenuItem>
               <NavigationMenuTrigger className="text-xl px-2">Tools</NavigationMenuTrigger>
               <NavigationMenuContent>
@@ -114,7 +103,10 @@ export function MainNav() {
             </NavigationMenuItem>
           </NavigationMenuList>
         </NavigationMenu>
-        <ModeToggle />
+        <div className="flex items-center space-x-4">
+          <ModeToggle />
+          {user ? <UserMenu /> : <LoginModal />}
+        </div>
       </div>
     </nav>
   )

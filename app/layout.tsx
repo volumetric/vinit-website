@@ -5,6 +5,7 @@ import { Inter } from 'next/font/google';
 import { ThemeProvider } from "@/components/theme-provider"
 import { MainNav } from "@/components/main-nav"
 import { Footer } from "@/components/footer"
+import { AuthProvider } from '@/app/components/AuthProvider'
 
 // Check if the font is properly initialized
 const inter = Inter({ subsets: ['latin'] });
@@ -20,18 +21,20 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" data-new-gr-c-s-check-loaded="" data-gr-ext-installed="">
-      <body data-new-gr-c-s-check-loaded="" data-gr-ext-installed="" className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          <div className="flex min-h-screen flex-col">
-            <header className="container">
-              <MainNav />
-            </header>
-            <main className="flex-1">{children}</main>
-            <Footer />
-          </div>
-        </ThemeProvider>
-      </body>
+    <html lang="en">
+      <AuthProvider>
+        <body data-new-gr-c-s-check-loaded="" data-gr-ext-installed="" className={inter.className}>
+          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+            <div className="flex min-h-screen flex-col">
+              <header className="container">
+                <MainNav />
+              </header>
+              <main className="flex-1">{children}</main>
+              <Footer />
+            </div>
+          </ThemeProvider>
+        </body>
+      </AuthProvider>
     </html>
   )
 }
