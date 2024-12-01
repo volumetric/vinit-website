@@ -79,14 +79,28 @@ async function callCognitiveTool(toolName, toolInput) {
 }
 
 export async function POST(req) {
-  // Handle CORS - Allow all origins for public API
+  // Get the origin from the request headers
+  const origin = req.headers.get('origin') || '';
+  
+  // Define allowed origins
+  const allowedOrigins = [
+    'chrome-extension://*',
+    'http://localhost:3000'
+  ];
+
+  // Check if the origin is allowed
+  const isAllowedOrigin = allowedOrigins.includes(origin);
+  
+  // Set CORS headers
   const headers = {
-    'Access-Control-Allow-Origin': 'chrome-extension://*',
+    // 'Access-Control-Allow-Origin': isAllowedOrigin ? origin : '',
+    'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, Origin',
     'Access-Control-Allow-Credentials': 'true'
   };
 
+  // Handle preflight request
   if (req.method === 'OPTIONS') {
     return new NextResponse(null, { status: 200, headers });
   }
