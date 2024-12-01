@@ -81,9 +81,10 @@ async function callCognitiveTool(toolName, toolInput) {
 export async function POST(req) {
   // Handle CORS - Allow all origins for public API
   const headers = {
-    'Access-Control-Allow-Origin': '*',  // Allow all origins
+    'Access-Control-Allow-Origin': 'chrome-extension://*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',  // Added Authorization header
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, Origin',
+    'Access-Control-Allow-Credentials': 'true'
   };
 
   if (req.method === 'OPTIONS') {

@@ -12,6 +12,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "extractWisdom") {
     fetch(`${baseUrl}/content-diet/api/transform`, {
       method: 'POST',
+      mode: 'cors',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'Origin': chrome.runtime.getURL('')
+      },
       headers: {
         'Content-Type': 'application/json',
       },
