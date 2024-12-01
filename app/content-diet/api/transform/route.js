@@ -85,7 +85,7 @@ export async function POST(req) {
   // Define allowed origins
   const allowedOrigins = [
     'chrome-extension://*',
-    'http://localhost:3000'
+    'http://localhost:3000',
   ];
 
   // Check if the origin is allowed
