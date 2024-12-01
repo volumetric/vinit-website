@@ -4,6 +4,8 @@ chrome.management.getSelf((extensionInfo) => {
   baseUrl = extensionInfo.installType === 'development' 
     ? 'http://localhost:3000' 
     : 'https://vinitagrawal.com';
+
+    // baseUrl = 'https://vinitagrawal.com'
 });
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {

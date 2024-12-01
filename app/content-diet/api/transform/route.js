@@ -79,50 +79,36 @@ async function callCognitiveTool(toolName, toolInput) {
 }
 
 export async function POST(req) {
-  // Handle CORS
-  const origin = req.headers.get('origin');
-  
-  const allowedOrigins = ['http://localhost:3000', 'https://www.youtube.com', 'chrome-extension://'];
-  
-  const isAllowed = allowedOrigins.some(allowedOrigin => 
-    origin && (origin.startsWith(allowedOrigin) || origin === allowedOrigin)
-  );
+  // Handle CORS - Allow all origins for public API
+  const headers = {
+    'Access-Control-Allow-Origin': '*',  // Allow all origins
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',  // Added Authorization header
+  };
 
-  if (isAllowed) {
-    const headers = {
-      'Access-Control-Allow-Origin': origin,
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+  if (req.method === 'OPTIONS') {
+    return new NextResponse(null, { status: 200, headers });
+  }
+
+  const body = await req.json();
+  const { cognitive_tool, yt_videoid } = body;
+
+  if (!cognitive_tool || !yt_videoid) {
+    return NextResponse.json({ error: 'Missing required parameters' }, { status: 400, headers });
+  }
+
+  try {
+    const transcript = await getYouTubeTranscript(yt_videoid);
+    const cognitiveToolResult = await callCognitiveTool(cognitive_tool, transcript);
+
+    const result = {
+      youtube_transcript: transcript,
+      cognitive_tool_result: cognitiveToolResult,
     };
 
-    if (req.method === 'OPTIONS') {
-      return new NextResponse(null, { status: 200, headers });
-    }
-
-    const body = await req.json();
-    const { cognitive_tool, yt_videoid } = body;
-
-    if (!cognitive_tool || !yt_videoid) {
-      return NextResponse.json({ error: 'Missing required parameters' }, { status: 400, headers });
-    }
-
-    try {
-      const transcript = await getYouTubeTranscript(yt_videoid);
-      const cognitiveToolResult = await callCognitiveTool(cognitive_tool, transcript);
-
-      const result = {
-        youtube_transcript: transcript,
-        cognitive_tool_result: cognitiveToolResult,
-      };
-
-      return NextResponse.json(result, { headers });
-    } catch (error) {
-      console.error('Error in transform API:', error);
-      return NextResponse.json({ error: error.message }, { status: 500, headers });
-    }
-  } else {
-    // If the origin is not allowed, return a 403 Forbidden response
-    console.error('Forbidden access attempt from origin:', origin);
-    return new NextResponse(null, { status: 403 });
+    return NextResponse.json(result, { headers });
+  } catch (error) {
+    console.error('Error in transform API:', error);
+    return NextResponse.json({ error: error.message }, { status: 500, headers });
   }
 }
