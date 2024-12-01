@@ -1,7 +1,10 @@
 import { MongoClient, Db } from 'mongodb';
+import dotenv from 'dotenv'
 
 let cachedClient: MongoClient | null = null;
 let cachedDb: Db | null = null;
+
+dotenv.config({ path: '.env.local' })
 
 const MONGODB_URI = process.env.MONGODB_URI;
 const MONGODB_DB = process.env.MONGODB_DB;

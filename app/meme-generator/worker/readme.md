@@ -1,10 +1,7 @@
 # Add this on `package.json` file at top level, to run a script
 ```"type": "module",```
 
-# Command to run a ts script:
-```node --loader ts-node/esm meme_scraper_and_inserter.ts```
-
-# Put these in tsconfog.json
+# Put these in tsconfig.json
 ```
 "target": "ES2020",
 "module": "ESNext",  // use "commonjs" if you want to run a .ts file as a node script, otherwise use "esnext"
@@ -20,3 +17,7 @@
 process.env.MONGODB_URI = <Pick it from the .env file>;
 process.env.MONGODB_DB = "vinit-agrawal-website";
 ```
+
+
+# Command to run a ts script:
+```node --loader ts-node/esm meme_scraper_and_inserter.ts```
