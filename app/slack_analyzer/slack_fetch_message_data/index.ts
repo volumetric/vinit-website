@@ -1,4 +1,4 @@
-import { SlackConversationFetcher } from './slackConversationFetcher.js';
+import { SlackConversationFetcher } from './slackConversationFetcher';
 
 async function main() {
     try {

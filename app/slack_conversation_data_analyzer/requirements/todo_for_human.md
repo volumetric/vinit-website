@@ -6,9 +6,28 @@
 
 
 ========================
-1. Use Qdrant managed cloud service for storing the embeddings.
+1. Fetch relevant data from Slack (Read only)
+2. Organize the raw data into conversation transcript documents
 
-2. A Question Answering Agent, built 
+
+
+------
+1. Setup slack connection, add bot token to .env.local, do test calls to verify that the data is coming.
+2. Given a channel name, get all the messages from that channel in the past 30 days.
+    Optionally, take a date range in which to get all the messages.
+3. For each message in the channel, also get all the replies in that thread. and keep all those reply messages organized as threads. The return obkect should be an array of these thread conversations. Each thread conversation is an object with some metadata about the thread, including the 1st message (i.e. the channel message) of the thread and who started it, when it was started, etc. all the data coming from slack. Don't remore anything. and it should have a property called replies which should be an array of message objects, from that thread.
+
+
+
+
+
+
+
+
+===========
+1. Use Supabase managed cloud service for storing the embeddings.
+
+2. A Question Answering Agent, built.
 
 3. Fetch all the message data from Slack, using slack APIs. Including files and images shared. And links, etc.
 
