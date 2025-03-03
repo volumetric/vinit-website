@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
                         { status: 400 }
                     );
                 }
-                
+
                 const fetcher = new SlackConversationFetcher();
                 let conversations;
                 
@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
                     }
                 });
             }
-                
+
             default:
                 return NextResponse.json(
                     { success: false, error: `Unknown action: ${action}` },

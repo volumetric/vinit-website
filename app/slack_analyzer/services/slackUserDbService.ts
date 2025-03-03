@@ -67,13 +67,21 @@ export class SlackUserDbService {
   
   /**
    * Gets all users for a workspace
+   * @param workspaceId Workspace ID
+   * @param limit Optional maximum number of users to return
    */
-  async getUsersByWorkspace(workspaceId: string): Promise<SlackUser[]> {
+  async getUsersByWorkspace(workspaceId: string, limit?: number): Promise<SlackUser[]> {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('slack_users')
         .select('*')
         .eq('workspace_id', workspaceId);
+      
+      if (limit) {
+        query = query.limit(limit);
+      }
+      
+      const { data, error } = await query;
       
       if (error) throw error;
       return data || [];
@@ -87,6 +95,17 @@ export class SlackUserDbService {
    * Gets a user by their Slack user ID
    */
   async getUserByUserId(workspaceId: string, userId: string): Promise<SlackUser | null> {
+    // Validate inputs to prevent database errors
+    if (!workspaceId || workspaceId.trim() === '') {
+      console.warn('Invalid workspace ID provided to getUserByUserId');
+      return null;
+    }
+    
+    if (!userId || userId.trim() === '') {
+      console.warn('Invalid user ID provided to getUserByUserId');
+      return null;
+    }
+    
     try {
       const { data, error } = await supabase
         .from('slack_users')
@@ -106,6 +125,31 @@ export class SlackUserDbService {
     } catch (error) {
       handleSupabaseError(error, 'get user by ID');
       return null;
+    }
+  }
+
+  /**
+   * Gets all active workspaces
+   * @param limit Maximum number of workspaces to return
+   */
+  async getActiveWorkspaces(limit?: number): Promise<any[]> {
+    try {
+      let query = supabase
+        .from('workspaces')
+        .select('*')
+        .order('updated_at', { ascending: false });
+      
+      if (limit) {
+        query = query.limit(limit);
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      handleSupabaseError(error, 'get active workspaces');
+      return [];
     }
   }
 }

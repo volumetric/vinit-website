@@ -58,6 +58,12 @@ class UserCache {
    * If not found in cache, tries to fetch from database
    */
   public async getUser(workspaceId: string, userId: string): Promise<SlackUser | null> {
+    // Validate inputs
+    if (!workspaceId || !userId) {
+      console.warn(`Invalid parameters: workspaceId=${workspaceId}, userId=${userId}`);
+      return null;
+    }
+    
     const key = this.createKey(workspaceId, userId);
     
     // Check if in cache and not expired
@@ -68,14 +74,19 @@ class UserCache {
       }
     }
     
-    // Not in cache or expired, fetch from database
-    const user = await slackUserDbService.getUserByUserId(workspaceId, userId);
-    
-    if (user) {
-      this.addUser(user);
+    try {
+      // Not in cache or expired, fetch from database
+      const user = await slackUserDbService.getUserByUserId(workspaceId, userId);
+      
+      if (user) {
+        this.addUser(user);
+      }
+      
+      return user;
+    } catch (error) {
+      console.error(`Error fetching user ${userId} from workspace ${workspaceId}:`, error);
+      return null;
     }
-    
-    return user;
   }
   
   /**

@@ -38,7 +38,6 @@ export async function resolveUserMentions(
         resolvedText = resolvedText.replace(mention, `@${displayName}`);
       }
     } catch (error) {
-      console.error(`Error resolving user mention for ${userId}:`, error);
       // If error, leave the mention as is
     }
   }
@@ -73,7 +72,6 @@ export async function resolveUserIds(
         result[userId] = userId; // Use the ID as fallback
       }
     } catch (error) {
-      console.error(`Error resolving user ID ${userId}:`, error);
       result[userId] = userId; // Use the ID as fallback
     }
   }
@@ -94,4 +92,21 @@ export function extractUserMentions(text: string): string[] {
   
   // Extract just the user IDs from matches
   return matches.map(match => match[1]);
+}
+
+// Function to add special highlight to all user mentions in a text
+export function highlightUserMentions(text: string): string {
+  if (!text) {
+    return '';
+  }
+  
+  // Replace user mentions with highlighted version
+  return text.replace(/<@([A-Z0-9]+)>/g, (match, userId) => {
+    return `<span class="user-mention">@${userId}</span>`;
+  });
+}
+
+// Function to resolve user IDs from text that includes user mentions
+export function extractUserIdsFromText(text: string): string[] {
+  return extractUserMentions(text);
 } 

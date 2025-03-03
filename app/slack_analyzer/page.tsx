@@ -16,6 +16,11 @@ import { ChevronDown, ChevronUp, X, RefreshCw, Users } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { SlackUser } from './types/database';
+import MessageText from './components/MessageText';
+import useUserCache from './hooks/useUserCache';
+import CacheStats from './components/CacheStats';
+import { initializeUserCache, scheduleUserCacheRefresh } from './utils/cacheInitializer';
+import UserMention from './components/UserMention';
 
 interface Channel {
     id: string;
@@ -68,10 +73,39 @@ export default function SlackAnalyzer() {
     const [userSearchQuery, setUserSearchQuery] = useState('');
     const [loadingUsers, setLoadingUsers] = useState(false);
     const [userError, setUserError] = useState<string | null>(null);
-    const [workspaceId, setWorkspaceId] = useState<string | null>(null);
+    const [workspaceId, setWorkspaceId] = useState<string | null>("b4974b15-c113-42b3-9b88-a60d3a8b2773");
     const [hasLoadedUsers, setHasLoadedUsers] = useState(false);
     const [isRefresh, setIsRefresh] = useState(false);
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
+    // User cache hook
+    const {
+        refreshCache: refreshUserCache,
+        getCacheStats
+    } = useUserCache({
+        workspaceId,
+        autoLoad: false, // We'll load users when needed
+    });
+
+    // Initialize user cache when the application starts
+    useEffect(() => {
+        // Initialize the user cache with default settings
+        initializeUserCache({
+            maxWorkspaces: 5,
+            maxUsersPerWorkspace: 1000,
+            ttlMs: 3600000 // 1 hour
+        }).catch(err => {
+            console.error('Error initializing user cache:', err);
+        });
+        
+        // Schedule cache refresh every hour
+        const clearRefreshInterval = scheduleUserCacheRefresh(3600000);
+        
+        // Clean up the interval when the component unmounts
+        return () => {
+            clearRefreshInterval();
+        };
+    }, []);
 
     useEffect(() => {
         fetchChannels();
@@ -130,6 +164,14 @@ export default function SlackAnalyzer() {
         setOpenConversations(new Set());
         setIsAllExpanded(true);
         fetchMessages(value);
+        
+        // If we haven't loaded users yet, fetch them now
+        if (!hasLoadedUsers && workspaceId) {
+            fetchUsers(false);
+        } else if (!workspaceId) {
+            // If we don't have a workspace ID yet, we'll need to fetch users later
+            // This will happen automatically when the workspaceId is set
+        }
     };
 
     const clearSearch = () => {
@@ -196,6 +238,9 @@ export default function SlackAnalyzer() {
                         setUsers(usersData.users);
                         setHasLoadedUsers(true);
                         setLastUpdated(new Date());
+                        
+                        // Also refresh the user cache
+                        await refreshUserCache();
                     } else {
                         setUserError(usersData.error || 'Failed to fetch user details');
                     }
@@ -276,6 +321,9 @@ export default function SlackAnalyzer() {
                     setUsers(usersData.users);
                     setHasLoadedUsers(true);
                     setLastUpdated(new Date());
+                    
+                    // Also refresh the user cache
+                    await refreshUserCache();
                 } else {
                     setUserError(usersData.error || 'Failed to fetch user details');
                 }
@@ -327,6 +375,13 @@ export default function SlackAnalyzer() {
         );
     });
 
+    // Add a useEffect to fetch users when workspaceId changes
+    useEffect(() => {
+        if (workspaceId && !hasLoadedUsers) {
+            fetchUsers(false);
+        }
+    }, [workspaceId, hasLoadedUsers]);
+
     return (
         <div className="min-h-screen bg-gray-900 py-8">
             <div className="container mx-auto px-4 max-w-5xl">
@@ -336,16 +391,16 @@ export default function SlackAnalyzer() {
                 <div className="mb-6 text-gray-300">
                     Total Channels: <span className="font-semibold text-white">{channels.length}</span>
                 </div>
-
-                {/* Channel Selection */}
+            
+            {/* Channel Selection */}
                 <div className="mb-8 bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700">
                     <h2 className="text-xl font-semibold mb-4 text-gray-100">Select Channel</h2>
                     
                     {/* Channel Dropdown */}
-                    <Select value={selectedChannel} onValueChange={handleChannelChange}>
+                <Select value={selectedChannel} onValueChange={handleChannelChange}>
                         <SelectTrigger className="w-[300px] bg-gray-700 border-gray-600 text-gray-100">
-                            <SelectValue placeholder="Select a channel" />
-                        </SelectTrigger>
+                        <SelectValue placeholder="Select a channel" />
+                    </SelectTrigger>
                         <SelectContent className="bg-gray-800 border-gray-700">
                             <div className="p-2">
                                 <div className="relative">
@@ -380,31 +435,31 @@ export default function SlackAnalyzer() {
                                                 ({channel.member_count} members)
                                             </span>
                                         </span>
-                                    </SelectItem>
-                                ))}
+                            </SelectItem>
+                        ))}
                                 {filteredChannels.length === 0 && (
                                     <div className="py-2 px-2 text-sm text-gray-400">
                                         No channels found
                                     </div>
                                 )}
                             </div>
-                        </SelectContent>
-                    </Select>
-                </div>
+                    </SelectContent>
+                </Select>
+            </div>
 
-                {/* Loading State */}
-                {loading && (
+            {/* Loading State */}
+            {loading && (
                     <div className="text-center py-12 bg-gray-800 rounded-xl shadow-lg border border-gray-700">
                         <div className="animate-pulse text-gray-100 font-medium">Loading...</div>
-                    </div>
-                )}
+                </div>
+            )}
 
-                {/* Error State */}
-                {error && (
+            {/* Error State */}
+            {error && (
                     <div className="bg-red-900/50 border-2 border-red-700 text-red-200 px-6 py-4 rounded-xl font-medium">
-                        {error}
-                    </div>
-                )}
+                    {error}
+                </div>
+            )}
 
                 {/* Tabs */}
                 <Tabs value={activeTab} onValueChange={handleTabChange} className="mt-8">
@@ -425,12 +480,12 @@ export default function SlackAnalyzer() {
 
                     {/* Conversations Tab */}
                     <TabsContent value="conversations">
-                        {selectedChannel && conversations.length > 0 && (
-                            <div>
+            {selectedChannel && conversations.length > 0 && (
+                <div>
                                 <div className="flex justify-between items-center mb-6">
                                     <h2 className="text-2xl font-bold text-white">
-                                        Conversations in #{selectedChannel}
-                                    </h2>
+                        Conversations in #{selectedChannel}
+                    </h2>
                                     <Button
                                         onClick={toggleAllConversations}
                                         variant="outline"
@@ -446,7 +501,7 @@ export default function SlackAnalyzer() {
                                 </div>
 
                                 <div className="space-y-8">
-                                    {conversations.map((conversation) => (
+                        {conversations.map((conversation) => (
                                         <Card key={conversation.thread_id} className="overflow-hidden bg-gray-800 border border-gray-700 shadow-lg rounded-xl">
                                             <CardContent className="p-0">
                                                 {/* Conversation Header */}
@@ -456,9 +511,9 @@ export default function SlackAnalyzer() {
                                                 >
                                                     <div>
                                                         <span className="text-sm font-medium text-gray-300 bg-gray-700/50 px-3 py-1.5 rounded-full">
-                                                            {formatTimestamp(conversation.timestamp)}
-                                                        </span>
-                                                    </div>
+                                            {formatTimestamp(conversation.timestamp)}
+                                        </span>
+                                    </div>
                                                     {openConversations.has(conversation.thread_id) ? (
                                                         <ChevronUp className="h-5 w-5 text-gray-400" />
                                                     ) : (
@@ -469,49 +524,42 @@ export default function SlackAnalyzer() {
                                                 {/* Collapsible Content */}
                                                 {openConversations.has(conversation.thread_id) && (
                                                     <div className="border-t border-gray-700 p-6">
-                                                        {/* Messages */}
+                                    {/* Messages */}
                                                         <div className="space-y-4">
-                                                            {conversation.messages.map((message, idx) => (
-                                                                <div 
-                                                                    key={message.ts} 
-                                                                    className={`rounded-xl ${
-                                                                        idx === 0 
-                                                                            ? 'bg-gray-750 border border-gray-700' 
-                                                                            : 'ml-8 bg-gray-800 border border-gray-700'
-                                                                    } p-4 hover:bg-gray-750 transition-colors duration-200`}
-                                                                >
-                                                                    <div className="flex items-center gap-3 mb-3">
-                                                                        <div className="w-9 h-9 rounded-full bg-indigo-500/20 flex items-center justify-center">
-                                                                            <span className="text-sm font-semibold text-indigo-300">
-                                                                                {message.user.charAt(0).toUpperCase()}
-                                                                            </span>
-                                                                        </div>
-                                                                        <div className="text-sm font-semibold text-gray-100">
-                                                                            {message.user}
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="text-gray-300 whitespace-pre-wrap leading-relaxed pl-12">
-                                                                        {message.text}
-                                                                    </div>
-                                                                    
-                                                                    {/* Reactions */}
-                                                                    {message.reactions && message.reactions.length > 0 && (
-                                                                        <div className="mt-4 flex flex-wrap gap-2 pl-12">
-                                                                            {message.reactions.map(reaction => (
-                                                                                <span 
-                                                                                    key={reaction.name}
-                                                                                    className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-indigo-500/20 text-indigo-200 border border-indigo-500/30 font-medium"
-                                                                                >
-                                                                                    :{reaction.name}: {reaction.count}
-                                                                                </span>
-                                                                            ))}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            ))}
-                                                        </div>
+                                        {conversation.messages.map((message, idx) => (
+                                            <div 
+                                                key={message.ts} 
+                                                className={`rounded-xl ${
+                                                    idx === 0 
+                                                        ? 'bg-gray-750 border border-gray-700' 
+                                                        : 'ml-8 bg-gray-800 border border-gray-700'
+                                                } p-4 hover:bg-gray-750 transition-colors duration-200`}
+                                            >
+                                                <div className="flex items-center gap-3 mb-3">
+                                                    <UserMention userId={message.user} workspaceId={workspaceId || ''} size="large" />
+                                                </div>
+                                                <div className="text-gray-300 leading-relaxed pl-12">
+                                                    <MessageText text={message.text} workspaceId={workspaceId || ''} />
+                                                </div>
+                                                
+                                                {/* Reactions */}
+                                                {message.reactions && message.reactions.length > 0 && (
+                                                    <div className="mt-4 flex flex-wrap gap-2 pl-12">
+                                                        {message.reactions.map(reaction => (
+                                                            <span 
+                                                                key={reaction.name}
+                                                                className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-indigo-500/20 text-indigo-200 border border-indigo-500/30 font-medium"
+                                                            >
+                                                                :{reaction.name}: {reaction.count}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
 
-                                                        {/* Metadata */}
+                                    {/* Metadata */}
                                                         <div className="mt-6 pt-4 border-t border-gray-700">
                                                             <div className="flex flex-wrap gap-4 text-sm">
                                                                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-700/50 text-gray-300 font-medium">
@@ -520,24 +568,24 @@ export default function SlackAnalyzer() {
                                                                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-700/50 text-gray-300 font-medium">
                                                                     {conversation.metadata.reply_count} replies
                                                                 </div>
-                                                                {conversation.has_files && (
+                                        {conversation.has_files && (
                                                                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-700/50 text-gray-300 font-medium">
                                                                         Contains files
                                                                     </div>
-                                                                )}
-                                                            </div>
+                                        )}
+                                    </div>
                                                         </div>
                                                     </div>
                                                 )}
-                                            </CardContent>
-                                        </Card>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                </div>
+            )}
 
-                        {/* No Conversations State */}
-                        {selectedChannel && conversations.length === 0 && !loading && (
+            {/* No Conversations State */}
+            {selectedChannel && conversations.length === 0 && !loading && (
                             <div className="text-center py-12 bg-gray-800 rounded-xl shadow-lg border border-gray-700">
                                 <div className="text-gray-300 font-medium">No conversations found in this channel.</div>
                             </div>
@@ -742,6 +790,16 @@ export default function SlackAnalyzer() {
                                     </Button>
                                 </div>
                             )}
+
+                            {/* Cache Stats */}
+                            {workspaceId && hasLoadedUsers && (
+                                <div className="mt-8">
+                                    <CacheStats 
+                                        getStats={getCacheStats} 
+                                        refreshCache={refreshUserCache} 
+                                    />
+                </div>
+            )}
                         </div>
                     </TabsContent>
                 </Tabs>
