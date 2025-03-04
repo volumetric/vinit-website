@@ -22,6 +22,12 @@ import CacheStats from './components/CacheStats';
 import { initializeUserCache, scheduleUserCacheRefresh } from './utils/cacheInitializer';
 import UserMention from './components/UserMention';
 
+// Workspace configuration constants
+const DEFAULT_WORKSPACE_ID = "b4974b15-c113-42b3-9b88-a60d3a8b2773";
+const TEAM_ID = "T19R6KUS0";
+const WORKSPACE_NAME = "Tars Team";
+const WORKSPACE_SUBDOMAIN = "hellotars";
+
 interface Channel {
     id: string;
     name: string;
@@ -73,7 +79,7 @@ export default function SlackAnalyzer() {
     const [userSearchQuery, setUserSearchQuery] = useState('');
     const [loadingUsers, setLoadingUsers] = useState(false);
     const [userError, setUserError] = useState<string | null>(null);
-    const [workspaceId, setWorkspaceId] = useState<string | null>("b4974b15-c113-42b3-9b88-a60d3a8b2773");
+    const [workspaceId, setWorkspaceId] = useState<string | null>(DEFAULT_WORKSPACE_ID);
     const [hasLoadedUsers, setHasLoadedUsers] = useState(false);
     const [isRefresh, setIsRefresh] = useState(false);
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -217,14 +223,9 @@ export default function SlackAnalyzer() {
             setUserError(null);
             setIsRefresh(isRefreshRequest);
             
-            // For demo purposes, using a placeholder team ID and name
-            // In a real app, you would get these from the Slack API or user input
-            const teamId = "T12345"; // Replace with actual team ID
-            const workspaceName = "Demo Workspace"; // Replace with actual workspace name
-            
             // If we're refreshing, skip the Supabase check and fetch directly from Slack
             if (isRefreshRequest) {
-                const refreshResponse = await fetch(`/slack_analyzer/api?action=refreshUsers&teamId=${teamId}&workspaceName=${workspaceName}`);
+                const refreshResponse = await fetch(`/slack_analyzer/api?action=refreshUsers&teamId=${TEAM_ID}&workspaceName=${WORKSPACE_NAME}&workspaceDomain=${WORKSPACE_SUBDOMAIN}`);
                 const refreshData = await refreshResponse.json();
                 
                 if (refreshData.success) {
@@ -254,7 +255,7 @@ export default function SlackAnalyzer() {
             // First, check if we have a workspace ID
             if (!workspaceId) {
                 // Try to get the workspace ID from Supabase based on team_id
-                const workspaceResponse = await fetch(`/slack_analyzer/api?action=getWorkspaceByTeamId&teamId=${teamId}`);
+                const workspaceResponse = await fetch(`/slack_analyzer/api?action=getWorkspaceByTeamId&teamId=${TEAM_ID}`);
                 const workspaceData = await workspaceResponse.json();
                 
                 if (workspaceData.success && workspaceData.workspace) {
@@ -307,7 +308,7 @@ export default function SlackAnalyzer() {
             }
             
             // If we get here, we need to fetch from Slack
-            const response = await fetch(`/slack_analyzer/api?action=fetchUsers&teamId=${teamId}&workspaceName=${workspaceName}`);
+            const response = await fetch(`/slack_analyzer/api?action=fetchUsers&teamId=${TEAM_ID}&workspaceName=${WORKSPACE_NAME}&workspaceDomain=${WORKSPACE_SUBDOMAIN}`);
             const data = await response.json();
             
             if (data.success) {
