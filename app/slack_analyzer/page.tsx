@@ -1,88 +1,56 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+import { useEffect, useState } from "react";
 import { format } from 'date-fns';
-import { Input } from "@/components/ui/input";
-import { ChevronDown, ChevronUp, X, RefreshCw, Users } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { SlackUser } from './types/database';
-import MessageText from './components/MessageText';
 import useUserCache from './hooks/useUserCache';
-import CacheStats from './components/CacheStats';
 import { initializeUserCache, scheduleUserCacheRefresh } from './utils/cacheInitializer';
-import UserMention from './components/UserMention';
+import { Channel, Message, ConversationDocument } from './types/interfaces';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { X, Search, RefreshCw, Info, Users, ChevronDown, ArrowUp, ArrowDown, MessageCircle } from "lucide-react";
+import UsersList from "./components/user/UsersList";
+import ConversationsList from "./components/conversation/ConversationsList";
+import ConversationDetail from "./components/conversation/ConversationDetail";
+import CacheStats from "./components/CacheStats";
 
 // Workspace configuration constants
 const DEFAULT_WORKSPACE_ID = "b4974b15-c113-42b3-9b88-a60d3a8b2773";
-const TEAM_ID = "T19R6KUS0";
-const WORKSPACE_NAME = "Tars Team";
-const WORKSPACE_SUBDOMAIN = "hellotars";
-
-interface Channel {
-    id: string;
-    name: string;
-    is_private: boolean;
-    member_count: number;
-}
-
-interface Message {
-    ts: string;
-    thread_ts?: string;
-    user: string;
-    text: string;
-    files?: any[];
-    reactions?: Array<{
-        name: string;
-        count: number;
-        users: string[];
-    }>;
-}
-
-interface ConversationDocument {
-    thread_id: string;
-    channel_id: string;
-    messages: Message[];
-    participant_count: number;
-    timestamp: string;
-    has_files: boolean;
-    metadata: {
-        reply_count: number;
-        reply_users: string[];
-        reactions: Record<string, number>;
-    };
-}
+const TEAM_ID = "T19R6KUS0";  // Use the existing value
+const WORKSPACE_NAME = "Tars Team";  // Use the existing value
+const WORKSPACE_SUBDOMAIN = "hellotars";  // Use the existing value
 
 export default function SlackAnalyzer() {
+    // Main state
+    const [activeTab, setActiveTab] = useState('users');
+    
+    // Channel & messages state
     const [channels, setChannels] = useState<Channel[]>([]);
-    const [selectedChannel, setSelectedChannel] = useState<string>('');
+    const [selectedChannel, setSelectedChannel] = useState<string | null>(null);
+    const [selectedChannelName, setSelectedChannelName] = useState<string | null>(null);
     const [conversations, setConversations] = useState<ConversationDocument[]>([]);
-    const [loading, setLoading] = useState<boolean>(false);
-    const [error, setError] = useState<string | null>(null);
+    const [loadingConversations, setLoadingConversations] = useState(false);
+    const [loadingChannels, setLoadingChannels] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [openConversations, setOpenConversations] = useState<Set<string>>(new Set());
-    const [isAllExpanded, setIsAllExpanded] = useState(true);
-    const searchInputRef = useRef<HTMLInputElement>(null);
-    const [activeTab, setActiveTab] = useState('conversations');
+    const [channelSearchQuery, setChannelSearchQuery] = useState('');
+    const [conversationsError, setConversationsError] = useState<string | null>(null);
+    const [channelsError, setChannelsError] = useState<string | null>(null);
+    const [showConversationPane, setShowConversationPane] = useState(false);
     
     // User data state
     const [users, setUsers] = useState<SlackUser[]>([]);
-    const [userSearchQuery, setUserSearchQuery] = useState('');
     const [loadingUsers, setLoadingUsers] = useState(false);
     const [userError, setUserError] = useState<string | null>(null);
     const [workspaceId, setWorkspaceId] = useState<string | null>(DEFAULT_WORKSPACE_ID);
     const [hasLoadedUsers, setHasLoadedUsers] = useState(false);
     const [isRefresh, setIsRefresh] = useState(false);
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+    const [userStatusFilter, setUserStatusFilter] = useState<'active' | 'inactive' | 'all'>('active');
+    const [userBotFilter, setUserBotFilter] = useState<'human' | 'bot' | 'all'>('human');
+    const [userSortField, setUserSortField] = useState<'created_at' | 'display_name'>('created_at');
+    const [userSortDirection, setUserSortDirection] = useState<'asc' | 'desc'>('asc');
 
     // User cache hook
     const {
@@ -100,123 +68,119 @@ export default function SlackAnalyzer() {
             maxWorkspaces: 5,
             maxUsersPerWorkspace: 1000,
             ttlMs: 3600000 // 1 hour
-        }).catch(err => {
+        }).catch((err: Error) => {
             console.error('Error initializing user cache:', err);
         });
         
-        // Schedule cache refresh every hour
-        const clearRefreshInterval = scheduleUserCacheRefresh(3600000);
+        // Set up a refresh schedule
+        const cleanup = scheduleUserCacheRefresh(3600000); // 1 hour
         
-        // Clean up the interval when the component unmounts
-        return () => {
-            clearRefreshInterval();
-        };
-    }, []);
+        // Add refresh callback
+        const refreshInterval = setInterval(() => {
+            console.log('Scheduled cache refresh triggered');
+            refreshUserCache().catch((err: Error) => console.error('Error refreshing cache:', err));
+        }, 3600000);
 
+        // Clean up on unmount
+        return () => {
+            cleanup();
+            clearInterval(refreshInterval);
+        };
+    }, [refreshUserCache]);
+
+    // Effect to fetch channels on initial load
     useEffect(() => {
         fetchChannels();
     }, []);
 
+    // Effect to fetch users when tab changes to users
     useEffect(() => {
-        if (conversations.length > 0) {
-            setOpenConversations(new Set(conversations.map(conv => conv.thread_id)));
+        if (activeTab === 'users' && !hasLoadedUsers && workspaceId) {
+            fetchUsers();
         }
-    }, [conversations]);
+    }, [activeTab, hasLoadedUsers, workspaceId]);
 
+    // Format timestamp for display
+    const formatTimestamp = (ts: string) => {
+        return format(new Date(parseFloat(ts) * 1000), 'MMM d, yyyy h:mm a');
+    };
+
+    // Clear search query
+    const clearSearch = () => {
+        setSearchQuery('');
+    };
+
+    // Clear channel search query
+    const clearChannelSearch = () => {
+        setChannelSearchQuery('');
+    };
+
+    // Handle channel selection
+    const handleChannelSelect = (channelId: string, channelName: string) => {
+        setSelectedChannel(channelId);
+        setSelectedChannelName(channelName);
+        fetchMessages(channelId);
+        setShowConversationPane(true);
+    };
+
+    // Close conversation pane
+    const closeConversationPane = () => {
+        setShowConversationPane(false);
+    };
+
+    // Fetch channels list
     const fetchChannels = async () => {
         try {
-            setLoading(true);
+            setLoadingChannels(true);
+            setChannelsError(null);
+            
             const response = await fetch('/slack_analyzer/api?action=listChannels');
             const data = await response.json();
             
             if (data.success) {
-                setChannels(data.channels);
+                // Sort channels alphabetically
+                const sortedChannels = data.channels.sort((a: Channel, b: Channel) => 
+                    a.name.localeCompare(b.name)
+                );
+                setChannels(sortedChannels);
             } else {
-                setError(data.error || 'Failed to fetch channels');
+                setChannelsError(data.error || 'Failed to load channels');
             }
         } catch (err) {
-            setError('Error fetching channels');
-            console.error(err);
+            console.error('Error fetching channels:', err);
+            setChannelsError('Failed to load channels');
         } finally {
-            setLoading(false);
+            setLoadingChannels(false);
         }
     };
 
-    const fetchMessages = async (channelName: string) => {
+    // Fetch conversations for a channel
+    const fetchMessages = async (channelId: string, query = '') => {
         try {
-            setLoading(true);
-            setError(null);
-            const response = await fetch(`/slack_analyzer/api?action=fetchMessages&channelName=${channelName}`);
+            setLoadingConversations(true);
+            setConversationsError(null);
+            
+            const queryParam = query ? `&query=${encodeURIComponent(query)}` : '';
+            const response = await fetch(`/slack_analyzer/api?action=fetchMessages&channelId=${channelId}${queryParam}`);
             const data = await response.json();
             
             if (data.success) {
-                setConversations(data.conversations);
+                setConversations(data.conversations || []);
+                setSearchQuery(query);
             } else {
-                setError(data.error || 'Failed to fetch messages');
+                setConversationsError(data.error || 'Failed to load conversations');
+                setConversations([]);
             }
         } catch (err) {
-            setError('Error fetching messages');
-            console.error(err);
+            console.error('Error fetching messages:', err);
+            setConversationsError('Failed to load conversations');
+            setConversations([]);
         } finally {
-            setLoading(false);
+            setLoadingConversations(false);
         }
     };
 
-    const handleChannelChange = (value: string) => {
-        setSelectedChannel(value);
-        setSearchQuery('');
-        setConversations([]); // Clear conversations immediately
-        // Reset conversation states when changing channels
-        setOpenConversations(new Set());
-        setIsAllExpanded(true);
-        fetchMessages(value);
-        
-        // If we haven't loaded users yet, fetch them now
-        if (!hasLoadedUsers && workspaceId) {
-            fetchUsers(false);
-        } else if (!workspaceId) {
-            // If we don't have a workspace ID yet, we'll need to fetch users later
-            // This will happen automatically when the workspaceId is set
-        }
-    };
-
-    const clearSearch = () => {
-        setSearchQuery('');
-        if (searchInputRef.current) {
-            searchInputRef.current.focus();
-        }
-    };
-
-    const toggleConversation = (threadId: string) => {
-        const newOpenConversations = new Set(openConversations);
-        if (newOpenConversations.has(threadId)) {
-            newOpenConversations.delete(threadId);
-        } else {
-            newOpenConversations.add(threadId);
-        }
-        setOpenConversations(newOpenConversations);
-    };
-
-    const toggleAllConversations = () => {
-        if (isAllExpanded) {
-            setOpenConversations(new Set());
-        } else {
-            setOpenConversations(new Set(conversations.map(conv => conv.thread_id)));
-        }
-        setIsAllExpanded(!isAllExpanded);
-    };
-
-    const filteredChannels = channels
-        .filter(channel =>
-            channel.name.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-        .sort((a, b) => a.name.localeCompare(b.name));
-
-    const formatTimestamp = (ts: string) => {
-        return format(new Date(Number(ts) * 1000), 'MMM dd, yyyy HH:mm:ss');
-    };
-
-    // User data functions
+    // Fetch users from database or Slack API
     const fetchUsers = async (isRefreshRequest = false) => {
         try {
             setLoadingUsers(true);
@@ -276,12 +240,12 @@ export default function SlackAnalyzer() {
                             setUsers(usersData.users);
                             setHasLoadedUsers(true);
                             setLastUpdated(new Date());
-                            setLoadingUsers(false);
-                            return; // Exit early, no need to fetch from Slack
+                        } else {
+                            setUserError(usersData.error || 'Failed to fetch user details');
                         }
-                    } else if (hasUsersData.success) {
+                    } else {
                         // Workspace exists but has no users
-                        setLastUpdated(new Date());
+                        setUsers([]);
                     }
                 }
             } else {
@@ -298,12 +262,12 @@ export default function SlackAnalyzer() {
                         setUsers(usersData.users);
                         setHasLoadedUsers(true);
                         setLastUpdated(new Date());
-                        setLoadingUsers(false);
-                        return; // Exit early, no need to fetch from Slack
+                    } else {
+                        setUserError(usersData.error || 'Failed to fetch user details');
                     }
-                } else if (hasUsersData.success) {
+                } else {
                     // Workspace exists but has no users
-                    setLastUpdated(new Date());
+                    setUsers([]);
                 }
             }
             
@@ -314,7 +278,7 @@ export default function SlackAnalyzer() {
             if (data.success) {
                 setWorkspaceId(data.workspaceId);
                 
-                // Now fetch the actual user data
+                // Now fetch the user data we just imported
                 const usersResponse = await fetch(`/slack_analyzer/api?action=getUsers&workspaceId=${data.workspaceId}`);
                 const usersData = await usersResponse.json();
                 
@@ -333,478 +297,531 @@ export default function SlackAnalyzer() {
             }
         } catch (err) {
             console.error('Error fetching users:', err);
-            setUserError('Error fetching users. Check the console for details.');
+            setUserError('Failed to fetch user details');
         } finally {
             setLoadingUsers(false);
         }
     };
 
-    // Helper function to handle API errors
+    // Handle API errors
     const handleApiError = (data: any) => {
-        // Check for specific error types and provide helpful messages
-        if (data.error && data.error.includes('row-level security policy')) {
-            setUserError(
-                'Supabase RLS policy error: You need to set up the SUPABASE_SERVICE_ROLE_KEY in your .env.local file. ' +
-                'Please check the documentation for instructions on setting up Supabase credentials.'
-            );
-        } else if (data.error && data.error.includes('not defined in environment variables')) {
-            setUserError(
-                'Missing environment variables: Please set up your Supabase credentials in the .env.local file. ' +
-                'You need to add NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY.'
-            );
+        if (data.error === 'token_missing') {
+            setUserError('Slack API token not configured. Please set up your environment variables.');
+        } else if (data.error === 'invalid_auth') {
+            setUserError('Invalid Slack API token. Please check your credentials.');
         } else {
-            setUserError(data.error || 'Failed to fetch users');
+            setUserError(data.error || 'An unknown error occurred');
         }
     };
 
-    const handleTabChange = (value: string) => {
-        setActiveTab(value);
-        
-        // If switching to users tab and we haven't loaded users yet, fetch them
-        if (value === 'users' && !hasLoadedUsers) {
-            fetchUsers();
-        }
-    };
-
-    const filteredUsers = users.filter(user => {
-        const searchLower = userSearchQuery.toLowerCase();
-        return (
-            (user.name?.toLowerCase().includes(searchLower) || false) ||
-            (user.real_name?.toLowerCase().includes(searchLower) || false) ||
-            (user.display_name?.toLowerCase().includes(searchLower) || false) ||
-            (user.email?.toLowerCase().includes(searchLower) || false)
-        );
+    // Filter channels based on search
+    const filteredChannels = channels.filter(channel => {
+        if (!channelSearchQuery.trim()) return true;
+        return channel.name.toLowerCase().includes(channelSearchQuery.toLowerCase());
     });
 
-    // Add a useEffect to fetch users when workspaceId changes
-    useEffect(() => {
-        if (workspaceId && !hasLoadedUsers) {
-            fetchUsers(false);
-        }
-    }, [workspaceId, hasLoadedUsers]);
-
     return (
-        <div className="min-h-screen bg-gray-900 py-8">
-            <div className="container mx-auto px-4 max-w-5xl">
-                <h1 className="text-4xl font-bold mb-8 text-white">Slack Conversation Analyzer</h1>
+        <div className="container mx-auto p-6 max-w-7xl">
+            {/* Workspace Information */}
+            <Card className="bg-gray-800 border-gray-700 mb-6">
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-xl text-gray-100">Slack Workspace</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div className="space-y-1">
+                            <div className="text-gray-400">Workspace Name</div>
+                            <div className="text-gray-100 font-medium">{WORKSPACE_NAME}</div>
+                        </div>
+                        <div className="space-y-1">
+                            <div className="text-gray-400">Subdomain</div>
+                            <div className="text-gray-100 font-medium">{WORKSPACE_SUBDOMAIN}</div>
+                        </div>
+                        <div className="space-y-1">
+                            <div className="text-gray-400">Team ID</div>
+                            <div className="text-gray-100 font-medium font-mono">{TEAM_ID}</div>
+                        </div>
+                        <div className="space-y-1">
+                            <div className="text-gray-400">Workspace ID</div>
+                            <div className="text-gray-100 font-medium font-mono text-xs truncate" title={workspaceId || ''}>
+                                {workspaceId}
+                            </div>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Main Tabs */}
+            <Tabs 
+                defaultValue="users" 
+                value={activeTab}
+                onValueChange={setActiveTab}
+                className="space-y-6"
+            >
+                <TabsList className="bg-gray-800 border border-gray-700 mb-2 w-full p-1">
+                    <TabsTrigger 
+                        value="users"
+                        className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-md py-3 flex-1"
+                    >
+                        <Users className="h-5 w-5 mr-2" />
+                        Users
+                    </TabsTrigger>
+                    <TabsTrigger 
+                        value="channels"
+                        className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-md py-3 flex-1"
+                    >
+                        <MessageCircle className="h-5 w-5 mr-2" />
+                        Channels
+                    </TabsTrigger>
+                </TabsList>
                 
-                {/* Channel Stats */}
-                <div className="mb-6 text-gray-300">
-                    Total Channels: <span className="font-semibold text-white">{channels.length}</span>
-                </div>
-            
-            {/* Channel Selection */}
-                <div className="mb-8 bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700">
-                    <h2 className="text-xl font-semibold mb-4 text-gray-100">Select Channel</h2>
-                    
-                    {/* Channel Dropdown */}
-                <Select value={selectedChannel} onValueChange={handleChannelChange}>
-                        <SelectTrigger className="w-[300px] bg-gray-700 border-gray-600 text-gray-100">
-                        <SelectValue placeholder="Select a channel" />
-                    </SelectTrigger>
-                        <SelectContent className="bg-gray-800 border-gray-700">
-                            <div className="p-2">
-                                <div className="relative">
-                                    <Input
-                                        ref={searchInputRef}
-                                        type="text"
-                                        placeholder="Search channels..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="bg-gray-700 border-gray-600 text-gray-100 placeholder:text-gray-400 pr-8"
-                                    />
-                                    {searchQuery && (
-                                        <button
-                                            onClick={clearSearch}
-                                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
+                {/* Users Tab */}
+                <TabsContent value="users">
+                    <Card className="bg-gray-850 border-gray-700">
+                        <CardContent className="p-6">
+                            <div className="space-y-6">
+                                <div className="flex justify-between items-center">
+                                    <h2 className="text-xl font-semibold text-gray-100 flex items-center gap-2">
+                                        <Users className="h-5 w-5" />
+                                        Workspace Users
+                                    </h2>
+                                    <div className="flex gap-2">
+                                        <div className="relative">
+                                            <select
+                                                value={userStatusFilter}
+                                                onChange={(e) => setUserStatusFilter(e.target.value as 'active' | 'inactive' | 'all')}
+                                                className="bg-gray-700 border border-gray-600 text-gray-200 rounded px-3 py-1.5 pr-8 appearance-none"
+                                            >
+                                                <option value="active">Active Users</option>
+                                                <option value="inactive">Deactivated Users</option>
+                                                <option value="all">All Status</option>
+                                            </select>
+                                            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                                        </div>
+                                        
+                                        <div className="relative">
+                                            <select
+                                                value={userBotFilter}
+                                                onChange={(e) => setUserBotFilter(e.target.value as 'human' | 'bot' | 'all')}
+                                                className="bg-gray-700 border border-gray-600 text-gray-200 rounded px-3 py-1.5 pr-8 appearance-none"
+                                            >
+                                                <option value="human">Humans Only</option>
+                                                <option value="bot">Bots Only</option>
+                                                <option value="all">All Types</option>
+                                            </select>
+                                            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                                        </div>
+                                        
+                                        <Button
+                                            onClick={() => fetchUsers(true)}
+                                            size="sm"
+                                            variant="outline"
+                                            className="bg-gray-700 hover:bg-gray-600 text-gray-100 border-gray-600"
+                                            disabled={loadingUsers || isRefresh}
                                         >
-                                            <X className="h-4 w-4" />
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="max-h-[300px] overflow-auto">
-                                {filteredChannels.map((channel) => (
-                                    <SelectItem 
-                                        key={channel.id} 
-                                        value={channel.name}
-                                        className="text-gray-100 focus:bg-gray-700 focus:text-white"
-                                    >
-                                        <span className="flex items-center">
-                                            <span className="font-medium">#{channel.name}</span>
-                                            <span className="ml-2 text-sm text-gray-400">
-                                                ({channel.member_count} members)
-                                            </span>
-                                        </span>
-                            </SelectItem>
-                        ))}
-                                {filteredChannels.length === 0 && (
-                                    <div className="py-2 px-2 text-sm text-gray-400">
-                                        No channels found
+                                            <RefreshCw className={`h-4 w-4 mr-2 ${isRefresh ? 'animate-spin' : ''}`} />
+                                            Refresh Users
+                                        </Button>
                                     </div>
-                                )}
-                            </div>
-                    </SelectContent>
-                </Select>
             </div>
 
-            {/* Loading State */}
-            {loading && (
-                    <div className="text-center py-12 bg-gray-800 rounded-xl shadow-lg border border-gray-700">
-                        <div className="animate-pulse text-gray-100 font-medium">Loading...</div>
+                                {lastUpdated && (
+                                    <div className="text-sm text-gray-400">
+                                        Last updated: {lastUpdated.toLocaleString()}
                 </div>
             )}
 
-            {/* Error State */}
-            {error && (
-                    <div className="bg-red-900/50 border-2 border-red-700 text-red-200 px-6 py-4 rounded-xl font-medium">
-                    {error}
+                                {userError && (
+                                    <div className="bg-red-900/20 border border-red-700 text-red-300 p-4 rounded">
+                                        {userError}
                 </div>
             )}
 
-                {/* Tabs */}
-                <Tabs value={activeTab} onValueChange={handleTabChange} className="mt-8">
-                    <TabsList className="bg-gray-800 border border-gray-700">
-                        <TabsTrigger 
-                            value="conversations" 
-                            className="data-[state=active]:bg-gray-700 data-[state=active]:text-white text-gray-300"
-                        >
-                            Conversations
-                        </TabsTrigger>
-                        <TabsTrigger 
-                            value="users" 
-                            className="data-[state=active]:bg-gray-700 data-[state=active]:text-white text-gray-300"
-                        >
-                            Users
-                        </TabsTrigger>
-                    </TabsList>
-
-                    {/* Conversations Tab */}
-                    <TabsContent value="conversations">
-            {selectedChannel && conversations.length > 0 && (
-                <div>
-                                <div className="flex justify-between items-center mb-6">
-                                    <h2 className="text-2xl font-bold text-white">
-                        Conversations in #{selectedChannel}
-                    </h2>
-                                    <Button
-                                        onClick={toggleAllConversations}
-                                        variant="outline"
-                                        className="bg-gray-700 border-gray-600 text-gray-100 hover:bg-gray-600"
-                                    >
-                                        {isAllExpanded ? 'Collapse All' : 'Expand All'}
-                                    </Button>
-                                </div>
-
-                                {/* Date Range Info */}
-                                <div className="mb-6 text-gray-300">
-                                    Showing messages from the last 30 days
-                                </div>
-
-                                <div className="space-y-8">
-                        {conversations.map((conversation) => (
-                                        <Card key={conversation.thread_id} className="overflow-hidden bg-gray-800 border border-gray-700 shadow-lg rounded-xl">
-                                            <CardContent className="p-0">
-                                                {/* Conversation Header */}
-                                                <button
-                                                    onClick={() => toggleConversation(conversation.thread_id)}
-                                                    className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-750 transition-colors"
-                                                >
-                                                    <div>
-                                                        <span className="text-sm font-medium text-gray-300 bg-gray-700/50 px-3 py-1.5 rounded-full">
-                                            {formatTimestamp(conversation.timestamp)}
-                                        </span>
-                                    </div>
-                                                    {openConversations.has(conversation.thread_id) ? (
-                                                        <ChevronUp className="h-5 w-5 text-gray-400" />
-                                                    ) : (
-                                                        <ChevronDown className="h-5 w-5 text-gray-400" />
-                                                    )}
-                                                </button>
-
-                                                {/* Collapsible Content */}
-                                                {openConversations.has(conversation.thread_id) && (
-                                                    <div className="border-t border-gray-700 p-6">
-                                    {/* Messages */}
-                                                        <div className="space-y-4">
-                                        {conversation.messages.map((message, idx) => (
-                                            <div 
-                                                key={message.ts} 
-                                                className={`rounded-xl ${
-                                                    idx === 0 
-                                                        ? 'bg-gray-750 border border-gray-700' 
-                                                        : 'ml-8 bg-gray-800 border border-gray-700'
-                                                } p-4 hover:bg-gray-750 transition-colors duration-200`}
+                                {/* Custom User Search and Sort */}
+                                <div className="flex flex-col sm:flex-row gap-4">
+                                    <div className="relative flex-1">
+                                        <Input 
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            placeholder="Search users..."
+                                            className="bg-gray-700 border-gray-600 text-gray-200 w-full pl-10"
+                                        />
+                                        <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                        {searchQuery && (
+                                            <button 
+                                                onClick={clearSearch}
+                                                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300"
                                             >
-                                                <div className="flex items-center gap-3 mb-3">
-                                                    <UserMention userId={message.user} workspaceId={workspaceId || ''} size="large" />
-                                                </div>
-                                                <div className="text-gray-300 leading-relaxed pl-12">
-                                                    <MessageText text={message.text} workspaceId={workspaceId || ''} />
-                                                </div>
-                                                
-                                                {/* Reactions */}
-                                                {message.reactions && message.reactions.length > 0 && (
-                                                    <div className="mt-4 flex flex-wrap gap-2 pl-12">
-                                                        {message.reactions.map(reaction => (
-                                                            <span 
-                                                                key={reaction.name}
-                                                                className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-indigo-500/20 text-indigo-200 border border-indigo-500/30 font-medium"
-                                                            >
-                                                                :{reaction.name}: {reaction.count}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    {/* Metadata */}
-                                                        <div className="mt-6 pt-4 border-t border-gray-700">
-                                                            <div className="flex flex-wrap gap-4 text-sm">
-                                                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-700/50 text-gray-300 font-medium">
-                                                                    {conversation.participant_count} participants
-                                                                </div>
-                                                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-700/50 text-gray-300 font-medium">
-                                                                    {conversation.metadata.reply_count} replies
-                                                                </div>
-                                        {conversation.has_files && (
-                                                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-700/50 text-gray-300 font-medium">
-                                                                        Contains files
-                                                                    </div>
+                                                <X className="h-4 w-4" />
+                                            </button>
                                         )}
                                     </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* No Conversations State */}
-            {selectedChannel && conversations.length === 0 && !loading && (
-                            <div className="text-center py-12 bg-gray-800 rounded-xl shadow-lg border border-gray-700">
-                                <div className="text-gray-300 font-medium">No conversations found in this channel.</div>
-                            </div>
-                        )}
-                    </TabsContent>
-
-                    {/* Users Tab */}
-                    <TabsContent value="users">
-                        <div className="bg-gray-800 rounded-xl shadow-lg border border-gray-700 p-6">
-                            <div className="flex justify-between items-center mb-6">
-                                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                                    <Users className="h-6 w-6" />
-                                    Workspace Users
-                                </h2>
-                                <Button
-                                    onClick={() => fetchUsers(true)}
-                                    variant="outline"
-                                    className="bg-gray-700 border-gray-600 text-gray-100 hover:bg-gray-600 flex items-center gap-2"
-                                    disabled={loadingUsers}
-                                    title={lastUpdated ? `Last updated: ${format(lastUpdated, 'MMM dd, yyyy HH:mm:ss')}` : 'Refresh user data from Slack'}
-                                >
-                                    <RefreshCw className={`h-4 w-4 ${loadingUsers ? 'animate-spin' : ''}`} />
-                                    {hasLoadedUsers ? 'Refresh Users' : 'Fetch Users'}
-                                </Button>
-                            </div>
-
-                            {/* User Search */}
-                            <div className="mb-6">
-                                <div className="relative">
-                                    <Input
-                                        type="text"
-                                        placeholder="Search users..."
-                                        value={userSearchQuery}
-                                        onChange={(e) => setUserSearchQuery(e.target.value)}
-                                        className="bg-gray-700 border-gray-600 text-gray-100 placeholder:text-gray-400 pr-8"
-                                        disabled={loadingUsers || users.length === 0}
-                                    />
-                                    {userSearchQuery && (
+                                    
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm text-gray-400">Sort by:</span>
+                                        <div className="relative">
+                                            <select
+                                                value={userSortField}
+                                                onChange={(e) => setUserSortField(e.target.value as 'created_at' | 'display_name')}
+                                                className="bg-gray-700 border border-gray-600 text-gray-200 rounded px-3 py-1.5 pr-8 appearance-none"
+                                            >
+                                                <option value="created_at">Join Date</option>
+                                                <option value="display_name">Name</option>
+                                            </select>
+                                            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                                        </div>
+                                        
                                         <button
-                                            onClick={() => setUserSearchQuery('')}
-                                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
-                                            disabled={loadingUsers}
+                                            onClick={() => setUserSortDirection(userSortDirection === 'asc' ? 'desc' : 'asc')}
+                                            className="p-1.5 bg-gray-700 border border-gray-600 rounded hover:bg-gray-600 transition-colors"
+                                            title={userSortDirection === 'asc' ? 'Ascending order' : 'Descending order'}
+                                        >
+                                            {userSortDirection === 'asc' ? (
+                                                <ArrowUp className="h-4 w-4 text-gray-300" />
+                                            ) : (
+                                                <ArrowDown className="h-4 w-4 text-gray-300" />
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                {/* User Table */}
+                                {loadingUsers ? (
+                                    <div className="py-8">
+                                        <div className="animate-pulse flex space-x-4">
+                                            <div className="flex-1 space-y-4 py-1">
+                                                <div className="h-4 bg-gray-700 rounded"></div>
+                                                <div className="space-y-2">
+                                                    <div className="h-4 bg-gray-700 rounded"></div>
+                                                    <div className="h-4 bg-gray-700 rounded w-5/6"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : !users.length ? (
+                                    <div className="bg-gray-800 border border-gray-700 p-6 rounded-lg text-center">
+                                        <p className="text-gray-400">
+                                            {workspaceId ?
+                                                'No users found in the database for this workspace. Click "Refresh Users" to load user data from Slack.' :
+                                                'Please select a workspace first to view users.'}
+                                        </p>
+                                                </div>
+                                ) : (
+                                    <>
+                                        {/* Filtered Users Count */}
+                                        <div className="text-sm text-gray-400 mb-4">
+                                            {(() => {
+                                                const filteredUsers = users.filter(user => {
+                                                    // Status filter
+                                                    if (userStatusFilter === 'active' && !user.is_active) return false;
+                                                    if (userStatusFilter === 'inactive' && user.is_active) return false;
+                                                    
+                                                    // Bot/Human filter
+                                                    if (userBotFilter === 'human' && user.is_bot) return false;
+                                                    if (userBotFilter === 'bot' && !user.is_bot) return false;
+                                                    
+                                                    // Search query filter
+                                                    if (searchQuery.trim()) {
+                                                        const query = searchQuery.toLowerCase();
+                                                        return (
+                                                            (user.display_name && user.display_name.toLowerCase().includes(query)) ||
+                                                            (user.real_name && user.real_name.toLowerCase().includes(query)) ||
+                                                            (user.name && user.name.toLowerCase().includes(query)) ||
+                                                            (user.user_id && user.user_id.toLowerCase().includes(query))
+                                                        );
+                                                    }
+                                                    return true;
+                                                });
+                                                
+                                                return `Showing ${filteredUsers.length} of ${users.length} users`;
+                                            })()}
+                                        </div>
+                                        
+                                        <div className="rounded-md border border-gray-700 overflow-hidden">
+                                            <table className="w-full">
+                                                <thead className="bg-gray-800">
+                                                    <tr className="border-gray-700 hover:bg-gray-750">
+                                                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">User</th>
+                                                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">User ID</th>
+                                                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
+                                                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Role</th>
+                                                        <th 
+                                                            className={`py-3 px-4 text-left text-xs font-medium uppercase tracking-wider cursor-pointer ${userSortField === 'created_at' ? 'text-indigo-300' : 'text-gray-300'}`}
+                                                            onClick={() => {
+                                                                setUserSortField('created_at');
+                                                                if (userSortField === 'created_at') {
+                                                                    setUserSortDirection(userSortDirection === 'asc' ? 'desc' : 'asc');
+                                                                }
+                                                            }}
+                                                        >
+                                                            <div className="flex items-center">
+                                                                Joined
+                                                                {userSortField === 'created_at' && (
+                                                                    <span className="ml-1">
+                                                                        {userSortDirection === 'asc' ? '↑' : '↓'}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </th>
+                                                        <th className="py-3 px-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Last Activity</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="bg-gray-800 divide-y divide-gray-700">
+                                                    {users
+                                                        .filter(user => {
+                                                            // Status filter
+                                                            if (userStatusFilter === 'active' && !user.is_active) return false;
+                                                            if (userStatusFilter === 'inactive' && user.is_active) return false;
+                                                            
+                                                            // Bot/Human filter
+                                                            if (userBotFilter === 'human' && user.is_bot) return false;
+                                                            if (userBotFilter === 'bot' && !user.is_bot) return false;
+                                                            
+                                                            // Search query filter
+                                                            if (searchQuery.trim()) {
+                                                                const query = searchQuery.toLowerCase();
+                                                                return (
+                                                                    (user.display_name && user.display_name.toLowerCase().includes(query)) ||
+                                                                    (user.real_name && user.real_name.toLowerCase().includes(query)) ||
+                                                                    (user.name && user.name.toLowerCase().includes(query)) ||
+                                                                    (user.user_id && user.user_id.toLowerCase().includes(query))
+                                                                );
+                                                            }
+                                                            return true;
+                                                        })
+                                                        .sort((a, b) => {
+                                                            if (userSortField === 'created_at') {
+                                                                const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+                                                                const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+                                                                return userSortDirection === 'asc' ? dateA - dateB : dateB - dateA;
+                                                            } else {
+                                                                const nameA = (a.display_name || a.real_name || a.name || a.user_id || '').toLowerCase();
+                                                                const nameB = (b.display_name || b.real_name || b.name || b.user_id || '').toLowerCase();
+                                                                return userSortDirection === 'asc' 
+                                                                    ? nameA.localeCompare(nameB)
+                                                                    : nameB.localeCompare(nameA);
+                                                            }
+                                                        })
+                                                        .map(user => (
+                                                            <tr key={user.id} className="border-gray-700 hover:bg-gray-750">
+                                                                <td className="py-3 px-4">
+                                                                    <div className="flex items-center">
+                                                                        {user.image_url ? (
+                                                                            <img 
+                                                                                src={user.image_url} 
+                                                                                alt={user.display_name || user.real_name || user.name || ''} 
+                                                                                className="w-8 h-8 rounded-full mr-3"
+                                                                            />
+                                                                        ) : (
+                                                                            <div className="w-8 h-8 rounded-full bg-indigo-500/30 flex items-center justify-center text-sm font-semibold mr-3">
+                                                                                {(user.display_name || user.real_name || user.name || user.user_id).charAt(0).toUpperCase()}
+                                                                            </div>
+                                                                        )}
+                                                                        <div>
+                                                                            <div className="text-gray-200 font-medium">
+                                                                                {user.display_name || user.real_name || user.name || user.user_id}
+                                                                            </div>
+                                                                            {user.email && (
+                                                                                <div className="text-gray-400 text-xs">
+                                                                                    {user.email}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="py-3 px-4 font-mono text-xs text-gray-400">{user.user_id}</td>
+                                                                <td className="py-3 px-4">
+                                                                    <span className={`px-2 py-1 rounded text-xs ${
+                                                                        user.is_active 
+                                                                            ? 'bg-green-500/20 text-green-300' 
+                                                                            : 'bg-red-500/20 text-red-300'
+                                                                    }`}>
+                                                                        {user.is_active ? 'Active' : 'Deactivated'}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="py-3 px-4 text-gray-300">
+                                                                    <span className={`px-2 py-1 rounded text-xs ${
+                                                                        user.is_owner 
+                                                                            ? 'bg-purple-500/20 text-purple-300'
+                                                                            : user.is_admin 
+                                                                                ? 'bg-blue-500/20 text-blue-300'
+                                                                                : user.is_bot 
+                                                                                    ? 'bg-yellow-500/20 text-yellow-300'
+                                                                                    : 'bg-gray-500/20 text-gray-300'
+                                                                    }`}>
+                                                                        {user.is_owner 
+                                                                            ? 'Owner' 
+                                                                            : user.is_admin 
+                                                                                ? 'Admin' 
+                                                                                : user.is_bot 
+                                                                                    ? 'Bot' 
+                                                                                    : 'Member'}
+                                                            </span>
+                                                                </td>
+                                                                <td className="py-3 px-4 text-gray-300 text-sm">
+                                                                    {user.created_at ? format(new Date(user.created_at), 'MMM d, yyyy') : 'Unknown'}
+                                                                </td>
+                                                                <td className="py-3 px-4 text-gray-300 text-sm">
+                                                                    {user.updated ? format(new Date(user.updated), 'MMM d, yyyy') : 'Unknown'}
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        
+                                        {workspaceId && hasLoadedUsers && (
+                                            <CacheStats 
+                                                getStats={getCacheStats}
+                                                refreshCache={refreshUserCache}
+                                            />
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                
+                {/* Channels Tab */}
+                <TabsContent value="channels">
+                    <div className="flex space-x-6">
+                        {/* Channels List */}
+                        <Card className={`bg-gray-850 border-gray-700 ${showConversationPane ? 'w-1/3' : 'w-full'} transition-all duration-300`}>
+                            <CardHeader className="pb-2">
+                                <div className="flex justify-between items-center">
+                                    <CardTitle className="text-lg text-gray-100">Slack Channels</CardTitle>
+                                    <Button
+                                        onClick={fetchChannels}
+                                        size="sm"
+                                        variant="outline"
+                                        className="bg-gray-700 hover:bg-gray-600 text-gray-100 border-gray-600"
+                                        disabled={loadingChannels}
+                                    >
+                                        <RefreshCw className={`h-4 w-4 mr-2 ${loadingChannels ? 'animate-spin' : ''}`} />
+                                        Refresh
+                                    </Button>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="p-6">
+                                {/* Search Box */}
+                                <div className="relative mb-4">
+                                    <Input 
+                                        value={channelSearchQuery}
+                                        onChange={(e) => setChannelSearchQuery(e.target.value)}
+                                        placeholder="Search channels..."
+                                        className="bg-gray-700 border-gray-600 text-gray-200 w-full pl-10"
+                                    />
+                                    <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                    {channelSearchQuery && (
+                                        <button 
+                                            onClick={clearChannelSearch}
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300"
                                         >
                                             <X className="h-4 w-4" />
                                         </button>
                                     )}
                                 </div>
-                            </div>
-
-                            {/* User Loading State */}
-                            {loadingUsers && (
-                                <div className="text-center py-12">
-                                    <div className="animate-pulse flex flex-col items-center">
-                                        <RefreshCw className="h-8 w-8 text-gray-400 animate-spin mb-4" />
-                                        <div className="text-gray-100 font-medium">
-                                            {hasLoadedUsers && isRefresh ? 'Refreshing user data from Slack...' : 
-                                             hasLoadedUsers ? 'Loading users from database...' : 
-                                             'Loading users from Slack...'}
-                                        </div>
-                                        <div className="text-gray-400 text-sm mt-2">
-                                            {hasLoadedUsers && isRefresh ? 'Getting the latest user information from Slack API' : 
-                                             hasLoadedUsers ? 'Retrieving stored user data from Supabase' : 
-                                             'This may take a moment for workspaces with many users'}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* User Error State */}
-                            {userError && (
-                                <div className="bg-red-900/50 border-2 border-red-700 text-red-200 px-6 py-4 rounded-xl font-medium mb-6">
-                                    <div className="mb-2">{userError}</div>
-                                    
-                                    {userError.includes('RLS policy') || userError.includes('environment variables') ? (
-                                        <div className="mt-4 text-sm">
-                                            <h3 className="font-bold mb-2">Setup Instructions:</h3>
-                                            <ol className="list-decimal pl-5 space-y-2">
-                                                <li>Create a Supabase project at <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-red-100">supabase.com</a></li>
-                                                <li>Go to Project Settings &gt; API to get your URL and keys</li>
-                                                <li>Create a <code className="bg-red-900/70 px-1 rounded">.env.local</code> file in your project root with:
-                                                    <pre className="bg-red-900/70 p-2 mt-1 rounded overflow-x-auto">
-                                                        NEXT_PUBLIC_SUPABASE_URL=your_supabase_url<br/>
-                                                        NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key<br/>
-                                                        SUPABASE_SERVICE_ROLE_KEY=your_service_role_key<br/>
-                                                        SLACK_BOT_TOKEN=your_slack_bot_token
-                                                    </pre>
-                                                </li>
-                                                <li>Run the SQL script in <code className="bg-red-900/70 px-1 rounded">app/slack_analyzer/db/schema.sql</code> in the Supabase SQL Editor</li>
-                                                <li>Restart your development server</li>
-                                            </ol>
-                                        </div>
-                                    ) : null}
-                                </div>
-                            )}
-
-                            {/* Users Table */}
-                            {!loadingUsers && users.length > 0 && (
-                                <div>
-                                    <div className="mb-4 text-gray-300 flex justify-between items-center">
-                                        <div>
-                                            Showing {filteredUsers.length} of {users.length} users
-                                        </div>
-                                        <div className="text-sm text-gray-400">
-                                            <span className="inline-flex items-center">
-                                                <span className="w-2 h-2 rounded-full bg-green-400 mr-2"></span>
-                                                Data loaded from {hasLoadedUsers && !isRefresh ? 'database' : 'Slack API'}
-                                                {lastUpdated && (
-                                                    <span className="ml-2">
-                                                        · Last updated: {format(lastUpdated, 'MMM dd, yyyy HH:mm:ss')}
-                                                    </span>
+                                
+                                {channelsError && (
+                                    <div className="bg-red-900/20 border border-red-700 text-red-300 p-4 rounded mb-4">
+                                        {channelsError}
+                                                    </div>
                                                 )}
-                                            </span>
+                                
+                                {loadingChannels ? (
+                                    <div className="py-8">
+                                        <div className="animate-pulse flex space-x-4">
+                                            <div className="flex-1 space-y-4 py-1">
+                                                <div className="h-4 bg-gray-700 rounded"></div>
+                                                <div className="space-y-2">
+                                                    <div className="h-4 bg-gray-700 rounded"></div>
+                                                    <div className="h-4 bg-gray-700 rounded w-5/6"></div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
+                                ) : (
                                     <div className="rounded-md border border-gray-700 overflow-hidden">
-                                        <Table>
-                                            <TableHeader className="bg-gray-750">
-                                                <TableRow className="hover:bg-gray-700 border-gray-700">
-                                                    <TableHead className="text-gray-300">User</TableHead>
-                                                    <TableHead className="text-gray-300">Display Name</TableHead>
-                                                    <TableHead className="text-gray-300">Email</TableHead>
-                                                    <TableHead className="text-gray-300">Status</TableHead>
-                                                    <TableHead className="text-gray-300">Role</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {filteredUsers.map((user) => (
-                                                    <TableRow key={user.id} className="hover:bg-gray-750 border-gray-700">
-                                                        <TableCell className="font-medium text-gray-200">
-                                                            <div className="flex items-center gap-3">
-                                                                {user.image_url ? (
-                                                                    <img 
-                                                                        src={user.image_url} 
-                                                                        alt={user.name || 'User'} 
-                                                                        className="w-8 h-8 rounded-full"
-                                                                    />
-                                                                ) : (
-                                                                    <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center">
-                                                                        <span className="text-sm font-semibold text-indigo-300">
-                                                                            {(user.name || 'U').charAt(0).toUpperCase()}
-                                                                        </span>
-                                                                    </div>
-                                                                )}
-                                                                <span>{user.real_name || user.name}</span>
-                                                            </div>
-                                                        </TableCell>
-                                                        <TableCell className="text-gray-300">
-                                                            {user.display_name || '-'}
-                                                        </TableCell>
-                                                        <TableCell className="text-gray-300">
-                                                            {user.email || '-'}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                                user.is_active 
-                                                                    ? 'bg-green-500/20 text-green-300' 
-                                                                    : 'bg-red-500/20 text-red-300'
-                                                            }`}>
-                                                                {user.is_active ? 'Active' : 'Deactivated'}
-                                                            </span>
-                                                        </TableCell>
-                                                        <TableCell className="text-gray-300">
-                                                            {user.is_owner 
-                                                                ? 'Owner' 
-                                                                : user.is_admin 
-                                                                    ? 'Admin' 
-                                                                    : user.is_bot 
-                                                                        ? 'Bot' 
-                                                                        : 'Member'}
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
+                                        <table className="w-full">
+                                            <thead className="bg-gray-800">
+                                                <tr className="border-b border-gray-700">
+                                                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Channel</th>
+                                                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Members</th>
+                                                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Type</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="bg-gray-800 divide-y divide-gray-700">
+                                                {filteredChannels.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan={3} className="py-4 px-4 text-gray-400 text-center">
+                                                            No channels found
+                                                        </td>
+                                                    </tr>
+                                                ) : (
+                                                    filteredChannels.map(channel => (
+                                                        <tr 
+                                                            key={channel.id} 
+                                                            className={`hover:bg-gray-750 cursor-pointer transition-colors ${selectedChannel === channel.id ? 'bg-indigo-900/20' : ''}`}
+                                                            onClick={() => handleChannelSelect(channel.id, channel.name)}
+                                                        >
+                                                            <td className="py-3 px-4 text-gray-200 font-medium">
+                                                                # {channel.name}
+                                                            </td>
+                                                            <td className="py-3 px-4 text-gray-300">
+                                                                {channel.member_count}
+                                                            </td>
+                                                            <td className="py-3 px-4">
+                                                                <span className={`px-2 py-1 rounded text-xs ${
+                                                                    channel.is_private 
+                                                                        ? 'bg-gray-500/20 text-gray-300' 
+                                                                        : 'bg-green-500/20 text-green-300'
+                                                                }`}>
+                                                                    {channel.is_private ? 'Private' : 'Public'}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                )}
+                                            </tbody>
+                                        </table>
                                     </div>
-                                </div>
-                            )}
-
-                            {/* No Users State */}
-                            {!loadingUsers && users.length === 0 && !userError && (
-                                <div className="text-center py-12">
-                                    <div className="text-gray-300 font-medium mb-4">
-                                        No user data available.
+                                )}
+                            </CardContent>
+                        </Card>
+                        
+                        {/* Conversation Pane */}
+                        {showConversationPane && (
+                            <Card className="bg-gray-850 border-gray-700 w-2/3 transition-all duration-300">
+                                <CardHeader className="pb-2">
+                                    <div className="flex justify-between items-center">
+                                        <CardTitle className="text-lg text-gray-100 flex items-center">
+                                            <span>Conversations in #{selectedChannelName}</span>
+                                        </CardTitle>
+                                        <Button
+                                            onClick={closeConversationPane}
+                                            size="icon"
+                                            variant="ghost"
+                                            className="h-8 w-8 text-gray-400 hover:text-gray-200 hover:bg-gray-700"
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
                                     </div>
-                                    <div className="text-gray-400 text-sm mb-2">
-                                        {workspaceId ? 
-                                            'No users found in the database for this workspace. Click "Fetch Users" to load user data from Slack.' : 
-                                            'Click "Fetch Users" to load user data from Slack and store it in your database.'}
-                                    </div>
-                                    {lastUpdated && (
-                                        <div className="text-gray-500 text-xs mb-6">
-                                            Last checked: {format(lastUpdated, 'MMM dd, yyyy HH:mm:ss')}
-                                        </div>
-                                    )}
-                                    <Button
-                                        onClick={() => fetchUsers(false)}
-                                        variant="outline"
-                                        className="bg-gray-700 border-gray-600 text-gray-100 hover:bg-gray-600 flex items-center gap-2"
-                                    >
-                                        <Users className="h-4 w-4" />
-                                        Fetch Users
-                                    </Button>
-                                </div>
-                            )}
-
-                            {/* Cache Stats */}
-                            {workspaceId && hasLoadedUsers && (
-                                <div className="mt-8">
-                                    <CacheStats 
-                                        getStats={getCacheStats} 
-                                        refreshCache={refreshUserCache} 
+                                </CardHeader>
+                                <CardContent className="p-6">
+                                    <ConversationsList
+                                        conversations={conversations}
+                                        loading={loadingConversations}
+                                        error={conversationsError}
+                                        workspaceId={workspaceId}
+                                        formatTimestamp={formatTimestamp}
                                     />
-                </div>
-            )}
-                        </div>
-                    </TabsContent>
-                </Tabs>
-            </div>
+                                </CardContent>
+                            </Card>
+                        )}
+                    </div>
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }
