@@ -10,10 +10,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { X, Search, RefreshCw, Info, Users, ChevronDown, ArrowUp, ArrowDown, MessageCircle } from "lucide-react";
+import { X, Search, RefreshCw, Info, Users, ChevronDown, ArrowUp, ArrowDown, MessageCircle, FileText, Edit3 } from "lucide-react";
 import UsersList from "./components/user/UsersList";
 import ConversationsList from "./components/conversation/ConversationsList";
 import ConversationDetail from "./components/conversation/ConversationDetail";
+import SimpleConversationDetail from "./components/conversation/SimpleConversationDetail";
 import CacheStats from "./components/CacheStats";
 
 // Workspace configuration constants
@@ -38,6 +39,7 @@ export default function SlackAnalyzer() {
     const [conversationsError, setConversationsError] = useState<string | null>(null);
     const [channelsError, setChannelsError] = useState<string | null>(null);
     const [showConversationPane, setShowConversationPane] = useState(false);
+    const [isSimpleMode, setIsSimpleMode] = useState(false);
     
     // User data state
     const [users, setUsers] = useState<SlackUser[]>([]);
@@ -314,6 +316,10 @@ export default function SlackAnalyzer() {
         }
     };
 
+    const toggleSimpleMode = () => {
+        setIsSimpleMode(prev => !prev);
+    };
+
     // Filter channels based on search
     const filteredChannels = channels.filter(channel => {
         if (!channelSearchQuery.trim()) return true;
@@ -423,19 +429,19 @@ export default function SlackAnalyzer() {
                                             Refresh Users
                                         </Button>
                                     </div>
-            </div>
+                                </div>
 
                                 {lastUpdated && (
                                     <div className="text-sm text-gray-400">
                                         Last updated: {lastUpdated.toLocaleString()}
-                </div>
-            )}
+                                    </div>
+                                )}
 
                                 {userError && (
                                     <div className="bg-red-900/20 border border-red-700 text-red-300 p-4 rounded">
                                         {userError}
-                </div>
-            )}
+                                    </div>
+                                )}
 
                                 {/* Custom User Search and Sort */}
                                 <div className="flex flex-col sm:flex-row gap-4">
@@ -505,7 +511,7 @@ export default function SlackAnalyzer() {
                                                 'No users found in the database for this workspace. Click "Refresh Users" to load user data from Slack.' :
                                                 'Please select a workspace first to view users.'}
                                         </p>
-                                                </div>
+                                    </div>
                                 ) : (
                                     <>
                                         {/* Filtered Users Count */}
@@ -726,8 +732,8 @@ export default function SlackAnalyzer() {
                                 {channelsError && (
                                     <div className="bg-red-900/20 border border-red-700 text-red-300 p-4 rounded mb-4">
                                         {channelsError}
-                                                    </div>
-                                                )}
+                                    </div>
+                                )}
                                 
                                 {loadingChannels ? (
                                     <div className="py-8">
@@ -815,6 +821,8 @@ export default function SlackAnalyzer() {
                                         error={conversationsError}
                                         workspaceId={workspaceId}
                                         formatTimestamp={formatTimestamp}
+                                        isSimpleMode={isSimpleMode}
+                                        toggleSimpleMode={toggleSimpleMode}
                                     />
                                 </CardContent>
                             </Card>

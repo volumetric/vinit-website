@@ -26,6 +26,9 @@ interface SlackAnalyzerLayoutProps {
     isRefresh: boolean;
     lastUpdated: Date | null;
     
+    // Display options
+    isSimpleMode: boolean;
+    
     // Functions
     handleChannelChange: (value: string) => void;
     clearSearch: () => void;
@@ -33,6 +36,7 @@ interface SlackAnalyzerLayoutProps {
     refreshUsers: (isRefresh?: boolean) => Promise<void>;
     getCacheStats: () => Promise<CacheStatsData>;
     refreshUserCache: () => Promise<void>;
+    toggleSimpleMode: () => void;
 }
 
 export default function SlackAnalyzerLayout({
@@ -52,13 +56,17 @@ export default function SlackAnalyzerLayout({
     isRefresh,
     lastUpdated,
     
+    // Display options
+    isSimpleMode,
+    
     // Functions
     handleChannelChange,
     clearSearch,
     formatTimestamp,
     refreshUsers,
     getCacheStats,
-    refreshUserCache
+    refreshUserCache,
+    toggleSimpleMode
 }: SlackAnalyzerLayoutProps) {
     const [activeTab, setActiveTab] = useState('conversations');
 
@@ -116,6 +124,8 @@ export default function SlackAnalyzerLayout({
                                 error={conversationsError}
                                 workspaceId={workspaceId}
                                 formatTimestamp={formatTimestamp}
+                                isSimpleMode={isSimpleMode}
+                                toggleSimpleMode={toggleSimpleMode}
                             />
                         </TabsContent>
                         
