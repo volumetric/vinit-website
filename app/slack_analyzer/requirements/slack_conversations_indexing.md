@@ -8,6 +8,5 @@ Vinit Agrawal: Hello, how are you
 
 I see that the user_id is not replaced with the user's name in some messages, I am not sure why. it is being replaced in other message corresctly. can you fix that.
 
-There is an @ symbol that is added as prefix for all the user's names, please remove it from all the user's names.
 
 The reply messages in a conversation thread is showing in a different container in the UI. don't do that just put everything in the same container and keep the text one after another. one single markdown text.

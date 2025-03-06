@@ -54,14 +54,30 @@ export default function ConversationsList({
             
             // Collect all unique user IDs from all conversations
             const userIds = new Set<string>();
+            
+            // Add all message authors
             conversations.forEach(conversation => {
                 conversation.messages.forEach(message => {
                     userIds.add(message.user);
                 });
             });
             
+            // Extract user IDs from message content as well
+            conversations.forEach(conversation => {
+                conversation.messages.forEach(message => {
+                    const matches = message.text.match(/<@([A-Z0-9]+)(?:\|[^>]+)?>/g) || [];
+                    matches.forEach(match => {
+                        // Extract just the ID part
+                        const userId = match.substring(2).split(/[>|]/)[0];
+                        userIds.add(userId);
+                    });
+                });
+            });
+            
             const userMap: Record<string, string> = {};
-            for (const userId of userIds) {
+            
+            // Load all users' data in parallel
+            await Promise.all([...userIds].map(async (userId) => {
                 try {
                     const userData = await userCache.getUser(workspaceId, userId);
                     if (userData) {
@@ -72,7 +88,7 @@ export default function ConversationsList({
                 } catch (error) {
                     userMap[userId] = userId;
                 }
-            }
+            }));
             
             setUserNames(userMap);
         };
@@ -109,8 +125,8 @@ export default function ConversationsList({
             // Process message text to preserve formatting and properly handle user mentions
             let processedText = message.text;
             
-            // Replace user mentions
-            processedText = processedText.replace(/<@([A-Z0-9]+)>/g, (match, userId) => {
+            // Replace user mentions with a more robust regex
+            processedText = processedText.replace(/<@([A-Z0-9]+)(?:\|[^>]+)?>/g, (match, userId) => {
                 const name = userNames[userId] || userId;
                 return `@${name}`;
             });
@@ -146,6 +162,15 @@ export default function ConversationsList({
             processedText = processedText.replace(/(\*|_)(.+?)\1/g, '$2');
             processedText = processedText.replace(/`([^`]+)`/g, '$1');
             processedText = processedText.replace(/^>\s(.+)$/gm, '$1');
+            
+            // Final pass to catch any raw user IDs
+            Object.entries(userNames).forEach(([userId, userName]) => {
+                // Replace raw user IDs that might not be in the standard format
+                const userIdRegex = new RegExp(`\\b${userId}\\b`, 'g');
+                if (userId !== userName && processedText.match(userIdRegex)) {
+                    processedText = processedText.replace(userIdRegex, userName);
+                }
+            });
             
             text += `${userName}: ${processedText}\n`;
             if (index < conversation.messages.length - 1) {
