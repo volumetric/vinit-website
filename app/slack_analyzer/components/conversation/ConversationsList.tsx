@@ -158,10 +158,8 @@ export default function ConversationsList({
             // Preserve image references while removing the formatting
             processedText = processedText.replace(/<!(\[[^]]+\]\([^)]+\))>/g, '$1');
             
-            // Remove any formatting but preserve the content
-            processedText = processedText.replace(/(\*|_)(.+?)\1/g, '$2');
-            processedText = processedText.replace(/`([^`]+)`/g, '$1');
-            processedText = processedText.replace(/^>\s(.+)$/gm, '$1');
+            // PRESERVE markdown formatting
+            // We no longer remove bold, italic, code formatting
             
             // Final pass to catch any raw user IDs
             Object.entries(userNames).forEach(([userId, userName]) => {
