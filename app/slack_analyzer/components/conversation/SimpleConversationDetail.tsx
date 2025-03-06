@@ -16,6 +16,7 @@ export default function SimpleConversationDetail({
 }: SimpleConversationDetailProps) {
     const [userNames, setUserNames] = useState<Record<string, string>>({});
     const [isLoading, setIsLoading] = useState(true);
+    const [combinedText, setCombinedText] = useState<string>('');
     
     // Extract all user IDs from messages for loading
     const getAllUserIds = () => {
@@ -80,6 +81,26 @@ export default function SimpleConversationDetail({
         loadUserNames();
     }, [messages, workspaceId]);
     
+    // Generate combined text from all messages
+    useEffect(() => {
+        if (Object.keys(userNames).length === 0) return;
+        
+        let text = '';
+        messages.forEach((message, index) => {
+            const userName = userNames[message.user] || message.user;
+            const processedText = processText(message.text);
+            
+            text += `${userName}: ${processedText}`;
+            
+            // Add newline between messages
+            if (index < messages.length - 1) {
+                text += '\n\n';
+            }
+        });
+        
+        setCombinedText(text);
+    }, [messages, userNames]);
+    
     // Process text to replace user mentions but preserve markdown formatting
     const processText = (text: string) => {
         if (!text) return '';
@@ -138,69 +159,26 @@ export default function SimpleConversationDetail({
         return <div className="text-gray-400 p-4">No messages to display</div>;
     }
     
-    // If still loading user data, show a simple loading state for user names
+    // If still loading user data, show a simple loading state
     if (isLoading) {
         return (
-            <div className="space-y-4 font-mono">
-                {messages.map((message, idx) => (
-                    <div
-                        key={message.ts}
-                        className={`p-3 ${
-                            idx === 0 
-                                ? 'bg-gray-750 border border-gray-700 rounded-lg' 
-                                : 'ml-4 border-l-2 border-l-gray-600'
-                        }`}
-                    >
-                        <div className="flex justify-between mb-1 text-sm">
-                            <span className="font-semibold text-gray-200">
-                                <span className="inline-block w-24 h-4 bg-gray-700 rounded animate-pulse"></span>
-                            </span>
-                            <span className="text-gray-400">
-                                {formatTimestamp(message.ts)}
-                            </span>
-                        </div>
-                        
-                        <div className="text-gray-300 whitespace-pre-wrap break-words font-mono text-sm pl-2 border-l-2 border-l-gray-700">
-                            <div className="space-y-2">
-                                <div className="h-4 bg-gray-700 rounded w-full animate-pulse"></div>
-                                <div className="h-4 bg-gray-700 rounded w-5/6 animate-pulse"></div>
-                            </div>
-                        </div>
-                    </div>
-                ))}
+            <div className="p-4 bg-gray-750 border border-gray-700 rounded-lg">
+                <div className="space-y-3">
+                    <div className="h-4 bg-gray-700 rounded w-1/4 animate-pulse"></div>
+                    <div className="h-4 bg-gray-700 rounded w-full animate-pulse"></div>
+                    <div className="h-4 bg-gray-700 rounded w-5/6 animate-pulse"></div>
+                    <div className="h-4 bg-gray-700 rounded w-full animate-pulse"></div>
+                    <div className="h-4 bg-gray-700 rounded w-4/6 animate-pulse"></div>
+                </div>
             </div>
         );
     }
     
     return (
-        <div className="space-y-4 font-mono">
-            {messages.map((message, idx) => {
-                const processedText = processText(message.text);
-                
-                return (
-                    <div
-                        key={message.ts}
-                        className={`p-3 ${
-                            idx === 0 
-                                ? 'bg-gray-750 border border-gray-700 rounded-lg' 
-                                : 'ml-4 border-l-2 border-l-gray-600'
-                        }`}
-                    >
-                        <div className="flex justify-between mb-1 text-sm">
-                            <span className="font-semibold text-gray-200">
-                                {userNames[message.user] || message.user}: 
-                            </span>
-                            <span className="text-gray-400">
-                                {formatTimestamp(message.ts)}
-                            </span>
-                        </div>
-                        
-                        <div className="text-gray-300 whitespace-pre-wrap break-words font-mono text-sm pl-2 border-l-2 border-l-gray-700">
-                            {processedText}
-                        </div>
-                    </div>
-                );
-            })}
+        <div className="p-4 bg-gray-750 border border-gray-700 rounded-lg">
+            <div className="text-gray-300 whitespace-pre-wrap break-words font-mono text-sm">
+                {combinedText}
+            </div>
         </div>
     );
 } 

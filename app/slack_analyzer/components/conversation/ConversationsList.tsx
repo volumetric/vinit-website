@@ -170,9 +170,11 @@ export default function ConversationsList({
                 }
             });
             
-            text += `${userName}: ${processedText}\n`;
+            text += `${userName}: ${processedText}`;
+            
+            // Add double newline between messages
             if (index < conversation.messages.length - 1) {
-                text += '\n';
+                text += '\n\n';
             }
         });
         
