@@ -7,20 +7,72 @@ interface ConfigPanelProps {
 }
 
 const presetOptions = [
-  { id: "python-debugger", label: "Python debugger", icon: "🐍" },
-  { id: "translation", label: "Translation", icon: "🌐" },
-  { id: "meeting-takeaways", label: "Meeting takeaways", icon: "📝" },
-  { id: "writing-polisher", label: "Writing polisher", icon: "✍️" },
-  { id: "professional-analyst", label: "Professional analyst", icon: "👔" },
-  { id: "excel-expert", label: "Excel formula expert", icon: "📊" },
-  { id: "travel-planning", label: "Travel planning", icon: "✈️" },
-  { id: "sql-sorcerer", label: "SQL sorcerer", icon: "🔍" },
-  { id: "git-gud", label: "Git gud", icon: "🔄" },
+  {
+    id: "python-debugger",
+    label: "Python debugger",
+    icon: "🐍",
+    defaultInstruction:
+      "Help me debug Python code with detailed error analysis",
+  },
+  {
+    id: "translation",
+    label: "Translation",
+    icon: "🌐",
+    defaultInstruction:
+      "Translate text between languages with cultural context",
+  },
+  {
+    id: "meeting-takeaways",
+    label: "Meeting takeaways",
+    icon: "📝",
+    defaultInstruction: "Summarize key points from a meeting discussion",
+  },
+  {
+    id: "writing-polisher",
+    label: "Writing polisher",
+    icon: "✍️",
+    defaultInstruction: "Improve writing style and clarity",
+  },
+  {
+    id: "professional-analyst",
+    label: "Professional analyst",
+    icon: "👔",
+    defaultInstruction: "Analyze data and provide business insights",
+  },
+  {
+    id: "excel-expert",
+    label: "Excel formula expert",
+    icon: "📊",
+    defaultInstruction: "Create complex Excel formulas and explain their logic",
+  },
+  {
+    id: "travel-planning",
+    label: "Travel planning",
+    icon: "✈️",
+    defaultInstruction: "Plan detailed travel itineraries with local insights",
+  },
+  {
+    id: "sql-sorcerer",
+    label: "SQL sorcerer",
+    icon: "🔍",
+    defaultInstruction: "Write and optimize SQL queries for specific tasks",
+  },
+  {
+    id: "git-gud",
+    label: "Git gud",
+    icon: "🔄",
+    defaultInstruction: "Explain Git commands and workflows",
+  },
 ];
 
 export default function ConfigPanel({ onGenerate }: ConfigPanelProps) {
   const [instructions, setInstructions] = useState("");
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+
+  const handlePresetClick = (preset: (typeof presetOptions)[0]) => {
+    setSelectedPreset(preset.id);
+    setInstructions(preset.defaultInstruction);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +93,7 @@ export default function ConfigPanel({ onGenerate }: ConfigPanelProps) {
             <button
               key={option.id}
               type="button"
-              onClick={() => setSelectedPreset(option.id)}
+              onClick={() => handlePresetClick(option)}
               className={`flex items-center p-3 rounded-lg border transition-colors ${
                 selectedPreset === option.id
                   ? "border-purple-500 bg-purple-50 dark:bg-purple-900/20 dark:border-purple-400"

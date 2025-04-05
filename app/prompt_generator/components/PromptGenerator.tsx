@@ -6,10 +6,37 @@ import PreviewPanel from "./PreviewPanel";
 
 export default function PromptGenerator() {
   const [generatedPrompt, setGeneratedPrompt] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleGenerate = (config: any) => {
-    // TODO: Implement prompt generation logic
-    setGeneratedPrompt("Generated prompt will appear here...");
+  const handleGenerate = async (config: {
+    instructions: string;
+    selectedPreset: string | null;
+  }) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/prompt_generator/api/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(config),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate prompt");
+      }
+
+      const data = await response.json();
+      setGeneratedPrompt(data.prompt);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+      setGeneratedPrompt("");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -27,7 +54,11 @@ export default function PromptGenerator() {
 
       {/* Right Panel - Preview */}
       <div className="w-full lg:w-1/2 p-6 bg-white dark:bg-gray-800">
-        <PreviewPanel prompt={generatedPrompt} />
+        <PreviewPanel
+          prompt={generatedPrompt}
+          isLoading={isLoading}
+          error={error}
+        />
       </div>
     </div>
   );
