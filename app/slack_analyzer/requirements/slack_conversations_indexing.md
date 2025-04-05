@@ -10,3 +10,6 @@ The reply messages in a conversation thread, after the first message of the thre
 
 
 In the simple conversation view, the markdown is still being rendered to make it look beautiful. But when I copy the conversation text and paste it in my text editor it is looking perfect simple markdown text. Can you make it in such a way that it shows the exact markdown text that I copy, withou any markdown rendering.
+
+
+I want to do this simplification of the conversation threads into simple markdown plain text in the backend, so that I can save it in the supabase db in a new table called: "slack_conversations". Each row representing the whole conversation markdown plain text and it should save the thread_id of that slack thread for reference. Please make sure that you save this simplified conversation text in the supabase row, and not the rich messaages in json. Later we can use it when showing the simple conversation view in the frontend, but don't do that now.

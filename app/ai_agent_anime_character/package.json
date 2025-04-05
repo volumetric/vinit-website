@@ -1,0 +1,9 @@
+{
+  "name": "ai-agent-anime-character",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "face-api.js": "^0.22.2",
+    "react-dropzone": "^14.2.3"
+  }
+}

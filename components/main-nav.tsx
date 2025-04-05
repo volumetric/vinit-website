@@ -1,5 +1,5 @@
-import Link from "next/link"
-import { ModeToggle } from "@/components/mode-toggle"
+import Link from "next/link";
+import { ModeToggle } from "@/components/mode-toggle";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -7,7 +7,7 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
-} from "@/components/ui/navigation-menu"
+} from "@/components/ui/navigation-menu";
 
 // Remove or comment out the unused projectCategories variable
 // const projectCategories = [
@@ -18,37 +18,50 @@ import {
 // ]
 
 const tools = [
-  { 
-    name: "Image Generator", 
+  {
+    name: "Image Generator",
     href: "/image-generator",
     description: "Create unique images using AI technology.",
-    external: false
+    external: false,
   },
-  { 
-    name: "Emoji Maker", 
+  {
+    name: "Emoji Maker",
     href: "/emoji-maker",
     description: "Design custom emojis for your messages and social media.",
-    external: false
+    external: false,
   },
   {
     name: "OpenAPI Describer",
     href: "/openapi-describer",
     description: "Analyze and describe OpenAPI specifications with ease.",
-    external: false
+    external: false,
   },
   {
     name: "Cyber Sign (WIP)",
     href: "/cyber-sign",
     description: "Digitally sign PDF documents with ease (Work-In-Progress)",
-    external: false
+    external: false,
   },
   {
     name: "Meme Generator (WIP)",
     href: "/meme-generator",
     description: "Create memes with AI (Work-In-Progress)",
-    external: false
+    external: false,
   },
-]
+  {
+    name: "Anime Character Animator (WIP)",
+    href: "/ai_agent_anime_character",
+    description:
+      "Animate anime character faces with expressions and lip-sync capabilities.",
+    external: false,
+  },
+  {
+    name: "Prompt Generator (WIP)",
+    href: "/prompt_generator",
+    description: "Generate prompts for AI agents (Work-In-Progress)",
+    external: false,
+  },
+];
 
 export function MainNav() {
   return (
@@ -61,12 +74,16 @@ export function MainNav() {
           <NavigationMenuList className="space-x-4">
             <NavigationMenuItem>
               <Link href="/about" legacyBehavior passHref>
-                <NavigationMenuLink className="text-xl px-2">About</NavigationMenuLink>
+                <NavigationMenuLink className="text-xl px-2">
+                  About
+                </NavigationMenuLink>
               </Link>
             </NavigationMenuItem>
             <NavigationMenuItem>
               <Link href="/contact" legacyBehavior passHref>
-                <NavigationMenuLink className="text-xl px-2">Contact</NavigationMenuLink>
+                <NavigationMenuLink className="text-xl px-2">
+                  Contact
+                </NavigationMenuLink>
               </Link>
             </NavigationMenuItem>
             {/* <NavigationMenuItem>
@@ -89,7 +106,9 @@ export function MainNav() {
               </NavigationMenuContent>
             </NavigationMenuItem> */}
             <NavigationMenuItem>
-              <NavigationMenuTrigger className="text-xl px-2">Tools</NavigationMenuTrigger>
+              <NavigationMenuTrigger className="text-xl px-2">
+                Tools
+              </NavigationMenuTrigger>
               <NavigationMenuContent>
                 <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-1 lg:w-[600px]">
                   {tools.map((tool) => (
@@ -101,7 +120,9 @@ export function MainNav() {
                           target={tool.external ? "_blank" : "_self"}
                           rel={tool.external ? "noopener noreferrer" : ""}
                         >
-                          <div className="text-lg font-medium leading-none">{tool.name}</div>
+                          <div className="text-lg font-medium leading-none">
+                            {tool.name}
+                          </div>
                           <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
                             {tool.description}
                           </p>
@@ -117,5 +138,5 @@ export function MainNav() {
         <ModeToggle />
       </div>
     </nav>
-  )
+  );
 }

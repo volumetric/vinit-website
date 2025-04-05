@@ -28,4 +28,15 @@ export interface SlackUser {
   updated: string | null; // ISO date string
   created_at: string; // ISO date string
   updated_at: string; // ISO date string
+}
+
+export interface SlackConversation {
+  id: string; // UUID
+  thread_id: string; // The Slack thread ID (ts)
+  channel_id: string; // The Slack channel ID
+  workspace_id: string; // UUID reference to workspaces.id
+  conversation_text: string; // The simplified markdown plain text of the conversation
+  participant_count: number;
+  created_at: string; // ISO date string
+  updated_at: string; // ISO date string
 } 

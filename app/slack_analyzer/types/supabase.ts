@@ -1,4 +1,4 @@
-import { Workspace, SlackUser } from './database';
+import { Workspace, SlackUser, SlackConversation } from './database';
 
 export type Json =
   | string
@@ -20,6 +20,11 @@ export interface Database {
         Row: SlackUser;
         Insert: Omit<SlackUser, 'id' | 'created_at' | 'updated_at'>;
         Update: Partial<Omit<SlackUser, 'id' | 'created_at' | 'updated_at'>>;
+      };
+      slack_conversations: {
+        Row: SlackConversation;
+        Insert: Omit<SlackConversation, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<SlackConversation, 'id' | 'created_at' | 'updated_at'>>;
       };
     };
     Views: {

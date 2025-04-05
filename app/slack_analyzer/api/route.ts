@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { SlackConversationFetcher } from '../slack_fetch_message_data/slackConversationFetcher';
 import SlackUserService from '../services/slackUserService';
 import slackUserDbService from '../services/slackUserDbService';
+import slackConversationService from '../services/slackConversationService';
 import { supabase } from '../services/supabaseClient';
 
 async function getMessagesByChannelName(
@@ -60,6 +61,9 @@ export async function GET(request: NextRequest) {
             case 'checkWorkspaceHasUsers':
                 return await handleCheckWorkspaceHasUsers(searchParams);
                 
+            case 'saveConversationAsMarkdown':
+                return await handleSaveConversationAsMarkdown(slackToken, searchParams);
+                
             case 'listChannels': {
                 const fetcher = new SlackConversationFetcher();
                 const channels = await fetcher.listChannels();
@@ -111,16 +115,16 @@ export async function GET(request: NextRequest) {
             }
 
             default:
-                return NextResponse.json(
-                    { success: false, error: `Unknown action: ${action}` },
-                    { status: 400 }
-                );
+                return NextResponse.json({ 
+                    success: false, 
+                    error: `Unknown action: ${action}` 
+                }, { status: 400 });
         }
-    } catch (error: any) {
-        console.error('API route error:', error);
+    } catch (error) {
+        console.error('Error processing request:', error);
         return NextResponse.json({ 
             success: false, 
-            error: error.message || 'Unknown error' 
+            error: error instanceof Error ? error.message : 'Unknown error' 
         }, { status: 500 });
     }
 }
@@ -323,6 +327,66 @@ async function handleCheckWorkspaceHasUsers(searchParams: URLSearchParams) {
         return NextResponse.json({ 
             success: false, 
             error: error.message || 'Error checking workspace users' 
+        }, { status: 500 });
+    }
+}
+
+/**
+ * Fetch a conversation by thread_id, convert it to markdown, and save it to the database
+ */
+async function handleSaveConversationAsMarkdown(slackToken: string, searchParams: URLSearchParams) {
+    const threadId = searchParams.get('thread_id');
+    const channelId = searchParams.get('channel_id');
+    const workspaceId = searchParams.get('workspace_id');
+    
+    if (!threadId || !channelId || !workspaceId) {
+        return NextResponse.json({ 
+            success: false, 
+            error: 'Missing required parameters: thread_id, channel_id, workspace_id' 
+        }, { status: 400 });
+    }
+    
+    try {
+        // Initialize the fetcher with the Slack token
+        const fetcher = new SlackConversationFetcher();
+        
+        // Check if conversation is already saved
+        const existingConversation = await slackConversationService.getConversationByThreadId(threadId, workspaceId);
+        if (existingConversation) {
+            return NextResponse.json({
+                success: true,
+                message: 'Conversation already exists in database',
+                id: existingConversation.id,
+                thread_id: threadId
+            });
+        }
+        
+        // Fetch the thread messages from Slack
+        const threads = await fetcher.fetchChannelMessages(channelId);
+        const conversation = threads.find(thread => thread.thread_id === threadId);
+        
+        if (!conversation) {
+            return NextResponse.json({ 
+                success: false, 
+                error: `Thread not found: ${threadId}` 
+            }, { status: 404 });
+        }
+        
+        // Convert and save the conversation
+        const conversationId = await slackConversationService.saveConversation(conversation, workspaceId);
+        
+        return NextResponse.json({
+            success: true,
+            message: 'Conversation saved as markdown',
+            id: conversationId,
+            thread_id: threadId
+        });
+        
+    } catch (error) {
+        console.error('Error saving conversation as markdown:', error);
+        return NextResponse.json({ 
+            success: false, 
+            error: error instanceof Error ? error.message : 'Unknown error' 
         }, { status: 500 });
     }
 } 
